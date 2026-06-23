@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile View Only - Anti-PopUp Shield</title>
+    <title>Mobile View Only - Masked Frames</title>
     <style>
         html, body {
             margin: 0;
@@ -15,6 +15,7 @@
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
+        /* Full-fit container */
         .iframe-container {
             width: 100%;
             height: 100%;
@@ -37,13 +38,38 @@
             width: 100%;
             height: 100%;
             background: transparent;
-            z-index: 9999;
+            z-index: 10;
             pointer-events: auto;
         }
 
         .touch-interceptor.pass-through {
             pointer-events: none;
         }
+
+        /* --- THE COVERS --- */
+        /* High z-index (20) ensures they stay firmly on top of the iframe and the touch interceptor */
+        .top-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            background-color: #ffffff;
+            z-index: 20;
+            pointer-events: none; /* Allows clicks to pass through if necessary, or change to 'auto' to completely block clicks on the cover */
+        }
+
+        .bottom-cover {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #ffffff;
+            z-index: 20;
+            pointer-events: none;
+        }
+        /* ------------------ */
 
         .desktop-block {
             display: flex;
@@ -67,10 +93,13 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>Please open this websiteee on your mobile device.</p>
+        <p>Please open this website on your mobhhile device.</p>
     </div>
 
     <div class="iframe-container">
+        <div class="top-cover"></div>
+        <div class="bottom-cover"></div>
+
         <div class="touch-interceptor" id="interceptor"></div>
         
         <iframe 
@@ -83,17 +112,11 @@
 
     <script>
         const interceptor = document.getElementById('interceptor');
-        const frame = document.getElementById('stream-frame');
 
-        // Capture touchstart instantly to drop the hidden click overlay ads use
         interceptor.addEventListener('touchstart', (e) => {
-            // 1. Defuse browser target window exploitation strings
             window.open = function() { return null; }; 
-            
-            // 2. Clear out interceptor temporarily so the native Nuxt UI handles your tap smoothly
             interceptor.classList.add('pass-through');
 
-            // 3. Bring the defensive layer back before background redirect threads fire
             setTimeout(() => {
                 interceptor.classList.remove('pass-through');
             }, 250); 
