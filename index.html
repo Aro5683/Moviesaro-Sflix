@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile View Only - Masked Frames</title>
+    <title>Mobile View Only - URL Tracker Cover</title>
     <style>
         html, body {
             margin: 0;
@@ -12,10 +12,9 @@
             height: 100%;
             overflow: hidden;
             background-color: #000;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        /* Full-fit container */
         .iframe-container {
             width: 100%;
             height: 100%;
@@ -30,7 +29,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Anti-ad listener layer */
         .touch-interceptor {
             position: absolute;
             top: 0;
@@ -46,28 +44,44 @@
             pointer-events: none;
         }
 
-        /* --- THE COVERS --- */
-        /* High z-index (20) ensures they stay firmly on top of the iframe and the touch interceptor */
+        /* --- MASK COVERS --- */
         .top-cover {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 100px;
-            background-color: black;
+            height: 20px;
+            background-color: #ffffff;
             z-index: 20;
-            pointer-events: none; /* Allows clicks to pass through if necessary, or change to 'auto' to completely block clicks on the cover */
+            pointer-events: none;
         }
 
+        /* Updated Bottom Cover to act as a custom URL Display Bar */
         .bottom-cover {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 230px;
-            background-color: black;
+            height: 50px;
+            background-color: #ffffff;
             z-index: 20;
-            pointer-events: none;
+            pointer-events: auto; /* Changed to auto so it doesn't pass clicks down */
+            border-top: 1px solid #e0e0e0;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+
+        /* Style for the real-time URL text string */
+        .url-text {
+            font-size: 11px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            font-family: monospace;
         }
         /* ------------------ */
 
@@ -93,18 +107,21 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>Please open this website rron your mobhhile device.</p>
+        <p>Please opessn this website on your mobile device.</p>
     </div>
 
     <div class="iframe-container">
         <div class="top-cover"></div>
-        <div class="bottom-cover"></div>
+        
+        <div class="bottom-cover">
+            <div class="url-text" id="url-display">Loading: https://sflix.film/...</div>
+        </div>
 
         <div class="touch-interceptor" id="interceptor"></div>
         
         <iframe 
             id="stream-frame"
-            src="https://sflix.film/search-result?keyword=Search+Tamil+movies" 
+            src="https://sflix.film/" 
             sandbox="allow-scripts allow-forms allow-same-origin"
             allowfullscreen>
         </iframe>
@@ -112,11 +129,34 @@
 
     <script>
         const interceptor = document.getElementById('interceptor');
+        const urlDisplay = document.getElementById('url-display');
 
         interceptor.addEventListener('touchstart', (e) => {
+            // Defuse aggressive popup engines
             window.open = function() { return null; }; 
-            interceptor.classList.add('pass-through');
 
+            const touch = e.touches[0];
+            
+            // Map the coordinates of the physical touch point
+            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            if (targetElement) {
+                // Try to find if a link anchor tag or an element pointing to a video path was targeted
+                const prospectiveUrl = targetElement.getAttribute('href') || targetElement.closest('a')?.getAttribute('href');
+                
+                if (prospectiveUrl) {
+                    // Update our custom status bar with the captured link structure
+                    if (prospectiveUrl.startsWith('http')) {
+                        urlDisplay.textContent = prospectiveUrl;
+                    } else {
+                        // Cleans up absolute subpaths (e.g. /watch-movie/ -> https://sflix.film/watch-movie/)
+                        urlDisplay.textContent = `https://sflix.film${prospectiveUrl.startsWith('/') ? '' : '/'}${prospectiveUrl}`;
+                    }
+                }
+            }
+
+            // Drop shield smoothly for normal navigation pass-through
+            interceptor.classList.add('pass-through');
             setTimeout(() => {
                 interceptor.classList.remove('pass-through');
             }, 250); 
