@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile View Only</title>
+    <title>Mobile View Only - Secured</title>
     <style>
         /* Reset margins and paddings for a true full-screen experience */
         html, body {
@@ -20,7 +20,7 @@
         .iframe-container {
             width: 100%;
             height: 100%;
-            display: none; /* Hidden by default, shown via media queries */
+            display: none; 
         }
 
         iframe {
@@ -53,7 +53,7 @@
             color: #888;
         }
 
-        /* Media Query: Targets screens up to 767px (Phones and small portrait tablets) */
+        /* Media Query: Targets screens up to 767px */
         @media only screen and (max-width: 767px) {
             .iframe-container {
                 display: block;
@@ -66,15 +66,17 @@
 </head>
 <body>
 
-    <!-- This section shows ONLY on PC/Desktop -->
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>This website is optimized exclusively for mobile devices. Please open this link on your smartphone or scan the QR code to proceed.</p>
+        <p>This website is optimized exclusively for mobile devices. Please open this link on your smartphone.</p>
     </div>
 
-    <!-- This section shows ONLY on Mobile -->
     <div class="iframe-container">
-        <iframe src="https://sflix.film/search-result?keyword=Search+Tamil+movies" allowfullscreen></iframe>
+        <iframe 
+            src="https://sflix.film/search-result?keyword=Search+Tamil+movies" 
+            sandbox="allow-scripts allow-forms allow-same-origin"
+            allowfullscreen>
+        </iframe>
     </div>
 
 </body>
