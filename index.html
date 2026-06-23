@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile View Only - Ad Blocked</title>
+    <title>Mobile View Only - Full Ad Shield</title>
     <style>
         html, body {
             margin: 0;
@@ -15,7 +15,9 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        /* Full-fit container holding both iframe and shield */
         .iframe-container {
+            position: relative;
             width: 100%;
             height: 100%;
             display: none; 
@@ -25,6 +27,25 @@
             width: 100%;
             height: 100%;
             border: none;
+        }
+
+        /* THE SHIELD: Absorbs background taps on blank spaces.
+          Blocks invisible ad overlays from detecting user clicks.
+        */
+        .click-shield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        /* Controls the activation toggle */
+        .click-shield.disabled {
+            pointer-events: none;
         }
 
         .desktop-block {
@@ -45,11 +66,6 @@
             margin-bottom: 10px;
         }
 
-        .desktop-block p {
-            font-size: 16px;
-            color: #888;
-        }
-
         @media only screen and (max-width: 767px) {
             .iframe-container {
                 display: block;
@@ -64,16 +80,12 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>Please open this website on your mobile device.</p>
+        <p>Please open this website on your mobile device.up</p>
     </div>
 
     <div class="iframe-container">
-        <!-- 
-          Strict Sandbox Configuration:
-          - Omit 'allow-popups': Kills window.open() and target="_blank" links (No new tabs/popups).
-          - Omit 'allow-popups-to-escape-sandbox': Keeps everything locked in this box.
-          - 'allow-scripts' + 'allow-same-origin': Necessary for the movie site to load assets, but now heavily guarded.
-        -->
+        <div class="click-shield" id="shield"></div>
+        
         <iframe 
             src="https://sflix.film/search-result?keyword=Search+Tamil+movies" 
             sandbox="allow-scripts allow-forms allow-same-origin"
@@ -81,5 +93,23 @@
         </iframe>
     </div>
 
+    <script>
+        const shield = document.getElementById('shield');
+
+        // When a user taps your screen, it hits our safe shield instead of the ad layer.
+        shield.addEventListener('click', (e) => {
+            // 1. Defuse the ad trigger instantly
+            e.preventDefault();
+            e.stopPropagation();
+
+            // 2. Drop the shield for a split second so the actual link/search input works
+            shield.classList.add('disabled');
+
+            // 3. Immediately pull the shield back up to block subsequent popup scripts
+            setTimeout(() => {
+                shield.classList.remove('disabled');
+            }, 300); 
+        });
+    </script>
 </body>
 </html>
