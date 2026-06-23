@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile View Only</title>
+    <style>
+        /* Reset margins and paddings for a true full-screen experience */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Full-fit iframe wrapper */
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            display: none; /* Hidden by default, shown via media queries */
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Desktop Block Screen */
+        .desktop-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .desktop-block h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .desktop-block p {
+            font-size: 16px;
+            color: #888;
+        }
+
+        /* Media Query: Targets screens up to 767px (Phones and small portrait tablets) */
+        @media only screen and (max-width: 767px) {
+            .iframe-container {
+                display: block;
+            }
+            .desktop-block {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- This section shows ONLY on PC/Desktop -->
+    <div class="desktop-block">
+        <h1>Mobile Access Only</h1>
+        <p>This website is optimized exclusively for mobile devices. Please open this link on your smartphone or scan the QR code to proceed.</p>
+    </div>
+
+    <!-- This section shows ONLY on Mobile -->
+    <div class="iframe-container">
+        <iframe src="https://sflix.film/search-result?keyword=Search+Tamil+movies" allowfullscreen></iframe>
+    </div>
+
+</body>
+</html>
