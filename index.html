@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile View Only - Full Ad Shield</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile View Only - Smooth Ad Shield</title>
     <style>
         html, body {
             margin: 0;
@@ -13,9 +13,10 @@
             overflow: hidden;
             background-color: #000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            /* Prevents iOS/Android elastic scrolling bounce */
+            position: fixed; 
         }
 
-        /* Full-fit container holding both iframe and shield */
         .iframe-container {
             position: relative;
             width: 100%;
@@ -27,11 +28,10 @@
             width: 100%;
             height: 100%;
             border: none;
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* THE SHIELD: Absorbs background taps on blank spaces.
-          Blocks invisible ad overlays from detecting user clicks.
-        */
+        /* Smooth Mobile Shield */
         .click-shield {
             position: absolute;
             top: 0;
@@ -43,7 +43,6 @@
             pointer-events: auto;
         }
 
-        /* Controls the activation toggle */
         .click-shield.disabled {
             pointer-events: none;
         }
@@ -80,7 +79,7 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>Please open this website on your mobile device.up</p>
+        <p>Please open this website on your mobile deviceff.</p>
     </div>
 
     <div class="iframe-container">
@@ -96,20 +95,16 @@
     <script>
         const shield = document.getElementById('shield');
 
-        // When a user taps your screen, it hits our safe shield instead of the ad layer.
-        shield.addEventListener('click', (e) => {
-            // 1. Defuse the ad trigger instantly
-            e.preventDefault();
-            e.stopPropagation();
-
-            // 2. Drop the shield for a split second so the actual link/search input works
+        // Using 'touchstart' handles the mobile finger-press instantly before the browser delays it
+        shield.addEventListener('touchstart', (e) => {
+            // Drop the shield instantly so the iframe receives the press sequence
             shield.classList.add('disabled');
 
-            // 3. Immediately pull the shield back up to block subsequent popup scripts
+            // Keep the shield down just long enough for the mobile click to pass through to the button
             setTimeout(() => {
                 shield.classList.remove('disabled');
-            }, 300); 
-        });
+            }, 350); 
+        }, { passive: true });
     </script>
 </body>
 </html>
