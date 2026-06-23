@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile View Only - Secured</title>
+    <title>Mobile View Only - Ad Blocked</title>
     <style>
-        /* Reset margins and paddings for a true full-screen experience */
         html, body {
             margin: 0;
             padding: 0;
@@ -16,7 +15,6 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* Full-fit iframe wrapper */
         .iframe-container {
             width: 100%;
             height: 100%;
@@ -29,7 +27,6 @@
             border: none;
         }
 
-        /* Desktop Block Screen */
         .desktop-block {
             display: flex;
             flex-direction: column;
@@ -53,7 +50,6 @@
             color: #888;
         }
 
-        /* Media Query: Targets screens up to 767px */
         @media only screen and (max-width: 767px) {
             .iframe-container {
                 display: block;
@@ -68,10 +64,16 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>This website is optimized exclusively for mobile devices. Please open this link on your smartphone.</p>
+        <p>Please open this website on your mobile device.</p>
     </div>
 
     <div class="iframe-container">
+        <!-- 
+          Strict Sandbox Configuration:
+          - Omit 'allow-popups': Kills window.open() and target="_blank" links (No new tabs/popups).
+          - Omit 'allow-popups-to-escape-sandbox': Keeps everything locked in this box.
+          - 'allow-scripts' + 'allow-same-origin': Necessary for the movie site to load assets, but now heavily guarded.
+        -->
         <iframe 
             src="https://sflix.film/search-result?keyword=Search+Tamil+movies" 
             sandbox="allow-scripts allow-forms allow-same-origin"
