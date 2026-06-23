@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile View - 100% Smooth Ad Block</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smooth Smart-Click View</title>
     <style>
         html, body {
             margin: 0;
@@ -12,19 +12,27 @@
             height: 100%;
             overflow: hidden;
             background-color: #000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         .iframe-container {
             width: 100%;
             height: 100%;
             display: none; 
+            position: relative;
         }
 
         iframe {
             width: 100%;
             height: 100%;
             border: none;
+            /* Deactivates clicks on the background by default to starve out ad scripts */
+            pointer-events: none; 
+        }
+
+        /* Utility class to instantly activate native buttons */
+        iframe.active-clicks {
+            pointer-events: auto !important;
         }
 
         .desktop-block {
@@ -37,21 +45,11 @@
             color: #fff;
             text-align: center;
             padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .desktop-block h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
         }
 
         @media only screen and (max-width: 767px) {
-            .iframe-container {
-                display: block;
-            }
-            .desktop-block {
-                display: none;
-            }
+            .iframe-container { display: block; }
+            .desktop-block { display: none; }
         }
     </style>
 </head>
@@ -59,16 +57,42 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>Please open this website on your mobile devicvvve.</p>
+        <p>Please open this website on your mobileee device.</p>
     </div>
 
-    <div class="iframe-container">
+    <div class="iframe-container" id="wrapper">
         <iframe 
+            id="my-iframe"
             src="https://sflix.film/search-result?keyword=Search+Tamil+movies" 
             sandbox="allow-scripts allow-forms"
             allowfullscreen>
         </iframe>
     </div>
 
+    <script>
+        const wrapper = document.getElementById('wrapper');
+        const iframe = document.getElementById('my-iframe');
+
+        // Monitor touch positions on the mobile screen
+        wrapper.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            
+            // Check what element type is physically beneath the user's finger
+            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            // If the user's finger is targeting active layout structures rather than blank margins
+            if (targetElement) {
+                // Instantly switch on normal browser handling for buttons/links
+                iframe.classList.add('active-clicks');
+            }
+        }, { passive: true });
+
+        // Kill the click pass-through the exact moment your finger lifts up
+        wrapper.addEventListener('touchend', () => {
+            setTimeout(() => {
+                iframe.classList.remove('active-clicks');
+            }, 150); // Small cooldown allows the native action to process smoothly
+        });
+    </script>
 </body>
 </html>
