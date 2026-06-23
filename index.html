@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mobile View Only - Smooth Ad Shield</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile View - 100% Smooth Ad Block</title>
     <style>
         html, body {
             margin: 0;
@@ -13,12 +13,9 @@
             overflow: hidden;
             background-color: #000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            /* Prevents iOS/Android elastic scrolling bounce */
-            position: fixed; 
         }
 
         .iframe-container {
-            position: relative;
             width: 100%;
             height: 100%;
             display: none; 
@@ -28,23 +25,6 @@
             width: 100%;
             height: 100%;
             border: none;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* Smooth Mobile Shield */
-        .click-shield {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            z-index: 10;
-            pointer-events: auto;
-        }
-
-        .click-shield.disabled {
-            pointer-events: none;
         }
 
         .desktop-block {
@@ -79,32 +59,16 @@
 
     <div class="desktop-block">
         <h1>Mobile Access Only</h1>
-        <p>Please open this website on your mobile deviceff.</p>
+        <p>Please open this website on your mobile devicvvve.</p>
     </div>
 
     <div class="iframe-container">
-        <div class="click-shield" id="shield"></div>
-        
         <iframe 
             src="https://sflix.film/search-result?keyword=Search+Tamil+movies" 
-            sandbox="allow-scripts allow-forms allow-same-origin"
+            sandbox="allow-scripts allow-forms"
             allowfullscreen>
         </iframe>
     </div>
 
-    <script>
-        const shield = document.getElementById('shield');
-
-        // Using 'touchstart' handles the mobile finger-press instantly before the browser delays it
-        shield.addEventListener('touchstart', (e) => {
-            // Drop the shield instantly so the iframe receives the press sequence
-            shield.classList.add('disabled');
-
-            // Keep the shield down just long enough for the mobile click to pass through to the button
-            setTimeout(() => {
-                shield.classList.remove('disabled');
-            }, 350); 
-        }, { passive: true });
-    </script>
 </body>
 </html>
