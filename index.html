@@ -263,7 +263,51 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
-</script><script>
+</script>
+  <script>
+  // 1. Define the reactive filter parameters
+const filterParams = {
+  page: 1,
+  perPage: 28,
+  channelId: 1,
+  classify: "Tamil dub",
+  country: "India",
+  year: "All",
+  sort: "Latest"
+};
+
+// 2. Your pasted function runs right below it
+async function fetchFilteredContent() {
+  try {
+    const response = await fetch("https://h5-api.aoneroom.com/wefeed-h5api-bff/subject/filter", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOjMyNjA2NDI1MTg3OTAxOTM4MDAsImF0cCI6MywiZXh0IjoiMTc4MjI2ODc0MiIsImV4cCI6MTc5MDA0NDc0MiwiaWF0IjoxNzgyMjY4NDQyfQ.zRWd1uFSVrOtcbM93LeA0CtHu7r1o_jWYawRSpV8kcw", 
+        "origin": "https://moviesaro-play.netlify.app",
+        "referer": "https://moviesaro-play.netlify.app/",
+        "x-client-info": JSON.stringify({ "timezone": "Asia/Calcutta" }),
+        "x-request-lang": "en"
+      },
+      body: JSON.stringify(filterParams) 
+    });
+
+    if (!response.ok) throw new Error('Network response failure');
+    
+    const data = await response.json();
+    
+    // 3. CRITICAL: Pass this data to your UI grid variable!
+    // Example: myMovieGridList.value = data.list; 
+    console.log("Filtered Data Received:", data);
+    
+  } catch (error) {
+    console.error("Failed to fetch filtered list:", error);
+  }
+}
+</script>
+  
+  <script>
 (function() {
     // ==========================================================================
     // NATIVE URL PARAMETER INJECTION (Loads filters & sorting by default instantly)
