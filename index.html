@@ -267,46 +267,77 @@ document.addEventListener("DOMContentLoaded", function() {
 document.addEventListener("DOMContentLoaded", function() {
 
     // ==========================================================================
-    // 1. FORCED DEFAULT FILTER LOGIC (Genre: All, Language: Tamil Dub, Country: India)
+    // 1. DYNAMIC AUTO-FILTER FORCING ENGINE (Nuxt Compliant)
     // ==========================================================================
-    function applyDefaultFilters() {
-        // Force text alterations visually so users see the accurate active states instantly
-        const filterItems = document.querySelectorAll('.outer-filter-item');
-        filterItems.forEach(item => {
-            const valDiv = item.querySelector('.value');
+    async function runAutoFilterSequence() {
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        // Locate outer filter menu boxes (Genre, Year, Country)
+        const filterBoxes = document.querySelectorAll('.outer-filter-item');
+        if (!filterBoxes || filterBoxes.length === 0) return;
+
+        // 1. Force visual UI layout states immediately to look perfect
+        filterBoxes.forEach(box => {
+            const valDiv = box.querySelector('.value');
             if (valDiv) {
-                // Set defaults visually
-                if (item.classList.contains('genre')) {
-                    valDiv.textContent = 'All';
-                } else if (item.classList.contains('country')) {
+                if (box.classList.contains('genre')) valDiv.textContent = 'All';
+                if (box.classList.contains('country')) {
                     valDiv.textContent = 'India';
-                    item.classList.add('active'); // Keep India highlighted green
+                    box.classList.add('active'); // Turn India button highlight green
                 }
             }
         });
 
-        // Simulate internal click sequence to force Nuxt API updates
-        // Find filter values inside hidden panel sheets (e.g. data-v-4cc40fd5)
-        const possibleOptions = document.querySelectorAll('[data-v-4cc40fd5], .filter-data-title, .filter-item');
-        
-        let foundTamil = false;
-        possibleOptions.forEach(opt => {
-            const text = opt.textContent.trim().toLowerCase();
-            
-            // Programmatically fire native click handles if strings match up
-            if (text === 'india' || text === 'tamil' || text === 'tamil dub' || text === 'all') {
-                if (text.includes('tamil')) foundTamil = true;
-                opt.click();
-            }
-        });
+        // 2. Trigger Country Dropdown -> Pick India
+        const countryBox = document.querySelector('.outer-filter-item.country');
+        if (countryBox) {
+            countryBox.click(); // Open internal Nuxt popover
+            await sleep(150);   // Wait for content items to render in DOM
 
-        // If 'Tamil Dub' is tucked away inside a nested selector, dispatch an event hook
-        if (!foundTamil) {
-            window.dispatchEvent(new CustomEvent('filter-change', { 
-                detail: { country: 'India', language: 'Tamil Dub', genre: 'All' } 
-            }));
+            // Search over dynamic list components (using standard Nuxt scope data attributes)
+            const targetOptions = document.querySelectorAll('[data-v-4cc40fd5], .filter-data-item, .filter-item, div');
+            for (let opt of targetOptions) {
+                if (opt.textContent.trim() === 'India') {
+                    opt.click(); // Select India
+                    break;
+                }
+            }
+            await sleep(150);
+        }
+
+        // 3. Open More Filters Menu to get Tamil Dub
+        const moreFilterBtn = document.querySelector('.more-filter');
+        if (moreFilterBtn) {
+            moreFilterBtn.click(); // Open drawer 
+            await sleep(250);
+
+            const extendedOptions = document.querySelectorAll('[data-v-4cc40fd5], .filter-data-item, div');
+            
+            // First pass: Active Genre All
+            for (let opt of extendedOptions) {
+                if (opt.textContent.trim() === 'All') {
+                    opt.click();
+                    break;
+                }
+            }
+
+            // Second pass: Track down Tamil / Tamil Dub options
+            for (let opt of extendedOptions) {
+                const text = opt.textContent.trim().toLowerCase();
+                if (text === 'tamil' || text === 'tamil dub') {
+                    opt.click(); // Trigger query update event lifecycle
+                    break;
+                }
+            }
+            
+            // Close filter panel drawer
+            moreFilterBtn.click();
         }
     }
 
-    // Run the filter trigger loop slightly after mounting to let Nuxt render first
-    setTimeout(applyDefaultFilters, 400);</script></body></html>
+    // Delayed call to ensure full application framework mount completion
+    setTimeout(runAutoFilterSequence, 600);
+
+});
+</script>
+</body></html>
