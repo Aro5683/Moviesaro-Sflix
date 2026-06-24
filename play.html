@@ -25,28 +25,13 @@
 
     .player-container {
       width: 100%;
-      height: 100%;
+      height: 100vh;
       position: relative;
       background-color: #000000;
       overflow: hidden;
     }
 
-    /* Add this inside your /play page styling */
-.player-container {
-  width: 100%;
-  height: 100vh;
-  position: relative;
-  overflow: hidden;
-  background: #000;
-}
-
-/* Force the iframe to scale slightly larger to push external site ads off-screen */
-.player-container iframe {
-  width: 100% !important;
-  height: 100% !important;
-  border: none;
-  transform: scale(1.02); /* Subtle zoom crops out thin border banner placements */
-}
+    /* Cleaned up iframe settings: subtle zoom crops out border ads, height respects the bottom blocker mask */
     .player-container iframe {
       width: 100% !important;
       height: calc(100% - 150px) !important;
@@ -56,6 +41,7 @@
       overflow: hidden !important;
       position: relative;
       z-index: 1;
+      transform: scale(1.02); 
     }
 
     .bottom-shield-block {
@@ -227,13 +213,11 @@
       };
 
       // 2. FOCUS BLINK HIGHER SECURITY LAYER
-      // Detects if an ad is shifting window focus away from the main document to generate popups.
       window.addEventListener('blur', function() {
         setTimeout(function() {
           if (document.activeElement === document.querySelector('iframe')) {
-            // Clicks landing inside iframe are fine; let browser continue natively.
+            // Internal interaction is fine.
           } else {
-            // An rogue ad tried to pull focus to a newly opened tab window background process. Force shift back!
             window.focus();
           }
         }, 0);
@@ -329,9 +313,6 @@
         iframe.setAttribute('mozallowfullscreen', 'true');
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
-        // BALANCED SECURE SANDBOX STRING:
-        // 'allow-same-origin' and 'allow-scripts' ensure player controls work perfectly.
-        // Leaving out 'allow-popups' blocks new windows completely from firing during clicks.
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
