@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Stream Player</title>
   
-  <!-- Content Security Policy configured to protect media streams -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
@@ -15,7 +14,7 @@
       width: 100%;
       height: 100%;
       background-color: #000000;
-      overflow: hidden;
+      overflow: hidden; /* Strict scroll disable on body element */
       font-family: ui-sans-serif, system-ui, sans-serif;
       -webkit-user-select: none;
       -moz-user-select: none;
@@ -24,87 +23,103 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Relative wrapper acting as the bounding canvas anchor */
+    /* Relative wrapper acting as the absolute non-scrollable stage canvas */
     .player-container {
       width: 100%;
       height: 100%;
       position: relative;
       background-color: #000000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      transition: all 0.3s ease;
+      overflow: hidden; /* Strict scroll disable inside the layout canvas wrapper */
     }
 
     .player-container iframe {
       width: 100% !important;
-      height: 100% !important;
+      height: calc(100% - 150px) !important; /* Limits player view bounds directly above the bottom block */
       border: none !important;
       outline: none !important;
       display: block;
-      z-index: 1; /* Sits underneath the control layer button system */
-      transition: all 0.3s ease;
+      overflow: hidden !important; /* Extra scroll guard modifier for browser engines */
     }
 
-    /* 
-      FLOATING ORIENTATION OVERLAY PANEL 
-      Positioned absolutely inside the parent container to sit perfectly on top of the iframe player.
-    */
-    .floating-orientation-menu {
+    /* SOLID BLACK BOTTOM MASK */
+    .bottom-shield-block {
       position: absolute;
-      top: 15px;      /* Positioned at the top area so it doesn't block standard player timelines at the bottom */
-      right: 15px;
-      display: flex;
-      flex-direction: row; /* Arranged side-by-side to look like a control bar */
-      gap: 8px;
-      z-index: 9999999;    /* Forces it to render on top of the running iframe video component */
-      pointer-events: none; /* Allows transparent accidental click bypass outside the actual buttons */
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 150px;
+      background-color: #000000; /* Matching absolute pure black */
+      z-index: 9999998;           /* Enforces placement directly above the iframe stream track */
+      pointer-events: auto;       /* Absorbs rogue ad clicks landing near the bottom screen track */
     }
 
-    .floating-btn {
-      background-color: rgba(20, 20, 20, 0.85);
-      color: #ffffff;
-      border: 1px solid #374151;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
+    /* MOBILE ORIENTATION ALERT MODAL WITH AUTOMATIC TIMEOUT CLOCK */
+    .orientation-popup-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.85); /* Slightly darker backdrop for better readability */
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 4px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
-      transition: all 0.2s ease;
-      pointer-events: auto; /* Forces the button components to remain clickable */
+      z-index: 9999999; /* Forces popup visibility strictly above everything else */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease-in-out;
     }
 
-    .floating-btn:active {
-      transform: scale(0.95);
-      background-color: #2563eb;
+    .orientation-popup-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
     }
 
-    .floating-btn.active-mode {
-      background-color: #16a34a; /* Distinctive green layout indicator matching current state choice */
-      border-color: #16a34a;
+    .orientation-popup-card {
+      background-color: #1a1a1a;
+      border: 1px solid #374151;
+      padding: 28px 24px;
+      border-radius: 12px;
+      width: 85%;
+      max-width: 340px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      text-align: center;
+      color: #ffffff;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
     }
 
-    /* Fallback landscape CSS transform mode configuration */
-    .forced-landscape iframe {
-      width: 100vh !important;
-      height: 100vw !important;
-      transform: rotate(90deg);
-      transform-origin: center;
+    .orientation-popup-overlay.show .orientation-popup-card {
+      transform: scale(1);
     }
 
-    /* Shifts buttons position if forced rotation mode handles coordinate tracks */
-    .forced-landscape .floating-orientation-menu {
-      top: 15px;
-      right: auto;
-      left: 15px;
+    .orientation-popup-card p {
+      margin: 0 0 15px 0;
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.5;
+      color: #e5e7eb;
     }
 
+    /* Dynamic Visual Text Countdown Timer Area */
+    .timer-badge {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #9ca3af;
+      background-color: #262626;
+      border: 1px solid #404040;
+      padding: 6px 16px;
+      border-radius: 50px;
+      margin-top: 5px;
+    }
+
+    .timer-number {
+      color: #22c55e; /* Green numeric countdown highlight */
+      font-weight: 700;
+    }
+
+    /* Error wrapper layouts */
     .error-wrapper {
       display: flex;
       flex-direction: column;
@@ -135,28 +150,29 @@
 </head>
 <body>
 
+  <div class="orientation-popup-overlay" id="orientationPopup">
+    <div class="orientation-popup-card">
+      <p>⚠️ Disable Auto orientation to make full screen video</p>
+      <div class="timer-badge">
+        Closing automatically in <span id="countdownSeconds" class="timer-number">5</span>s...
+      </div>
+    </div>
+  </div>
+
   <div class="player-container" id="playerWrapper">
     
-    <!-- Floating Configuration Options Menu Container (Now nested inside the player wrapper) -->
-    <div class="floating-orientation-menu" id="orientationMenu" style="display: none;">
-      <button class="floating-btn active-mode" id="btnPortrait">
-        📱 Portrait
-      </button>
-      <button class="floating-btn" id="btnLandscape">
-        🔄 Landscape
-      </button>
-    </div>
+    <div class="bottom-shield-block" id="bottomShield"></div>
 
   </div>
 
   <script>
     (function() {
       const wrapper = document.getElementById('playerWrapper');
-      const menu = document.getElementById('orientationMenu');
-      const btnPortrait = document.getElementById('btnPortrait');
-      const btnLandscape = document.getElementById('btnLandscape');
+      const bottomShield = document.getElementById('bottomShield');
+      const popup = document.getElementById('orientationPopup');
+      const timerNumber = document.getElementById('countdownSeconds');
 
-      // 1. BLOCK DESKTOP PC & LAPTOP ACCESS TERMINAL TRACKS
+      // 1. BLOCK DESKTOP PC & LAPTOP DEVICE ACCESS
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -165,6 +181,8 @@
       }
 
       if (!isMobileDevice()) {
+        bottomShield.style.display = 'none';
+        popup.style.display = 'none'; 
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Device Not Supported</div>
@@ -174,25 +192,27 @@
         return; 
       }
 
-      // Render overlay navigation panel options on valid touch device verification
-      menu.style.display = 'flex';
+      // 2. TIMED AUTOMATIC POPUP MANAGER
+      let timeLeft = 5; // Duration in seconds
 
-      // 2. INTERACTION EVENT TRACKING HANDLERS
-      btnPortrait.addEventListener('click', function(e) {
-        e.stopPropagation();
-        wrapper.classList.remove('forced-landscape');
-        btnPortrait.classList.add('active-mode');
-        btnLandscape.classList.remove('active-mode');
-      });
+      // Reveal the popup cleanly upon mobile confirmation
+      setTimeout(function() {
+        popup.classList.add('show');
+        
+        // Begin processing active count down tracking loop ticks every 1000ms
+        const countdownInterval = setInterval(function() {
+          timeLeft--;
+          timerNumber.textContent = timeLeft;
 
-      btnLandscape.addEventListener('click', function(e) {
-        e.stopPropagation();
-        wrapper.classList.add('forced-landscape');
-        btnLandscape.classList.add('active-mode');
-        btnPortrait.classList.remove('active-mode');
-      });
+          if (timeLeft <= 0) {
+            clearInterval(countdownInterval); // Kill ticker routine 
+            popup.classList.remove('show');   // Remove the overlay from screen view
+          }
+        }, 1000);
 
-      // 3. SECURITY SCRIPT INJECTIONS
+      }, 300);
+
+      // 3. SECURITY INTERCEPT COMMANDS (RIGHT CLICK + INSPECT DEFUSE)
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
       document.addEventListener('keydown', function(e) {
         if (e.keyCode === 123) { e.preventDefault(); return false; }
@@ -202,7 +222,7 @@
 
       window.open = function() { return null; };
 
-      // 4. PARSE STREAM SOURCE DATA & MOUNT SECURED FRAME LAYER
+      // 4. PARSE TRACK UNIQUE IDENTIFIER & INJECT LOCKED IFRAME
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -212,6 +232,9 @@
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
         
+        // Disable scroll support explicitly at the legacy iframe element definition parameter track
+        iframe.setAttribute('scrolling', 'no');
+        
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('webkitallowfullscreen', 'true');
         iframe.setAttribute('mozallowfullscreen', 'true');
@@ -219,16 +242,18 @@
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-presentation');
 
-        wrapper.appendChild(iframe);
+        // Insert the secure iframe element underneath the absolute bottom shield node
+        wrapper.insertBefore(iframe, bottomShield);
 
-        // History track parameter sweep cleanup execution
+        // Instantly sanitize the address URL query tracking strings
         try {
           const cleanUrl = window.location.protocol + "//" + window.location.host + "/play";
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
         } catch (historyErr) {}
 
       } else {
-        menu.style.display = 'none';
+        bottomShield.style.display = 'none';
+        popup.style.display = 'none';
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Invalid Request</div>
