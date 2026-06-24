@@ -269,6 +269,9 @@
         timerText.textContent = translations.en.timer;
       });
 
+      // Prevent parent trigger bubbling bugs on touch screens
+      langEnBtn.addEventListener('touchend', function(e) { e.stopPropagation(); });
+
       langTaBtn.addEventListener('click', function() {
         langTaBtn.classList.add('active-lang');
         langEnBtn.classList.remove('active-lang');
@@ -276,8 +279,10 @@
         timerText.textContent = translations.ta.timer;
       });
 
+      langTaBtn.addEventListener('touchend', function(e) { e.stopPropagation(); });
+
       // 3. TIMED AUTOMATIC POPUP MANAGER
-      let timeLeft = 20; 
+      let timeLeft = 5; 
 
       setTimeout(function() {
         popup.classList.add('show');
@@ -320,7 +325,13 @@
         iframe.setAttribute('mozallowfullscreen', 'true');
         
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-presentation');
+        
+        /* 
+          ANTI-POPUP AND ANTI-OVERLAY ADS MODIFICATIONS:
+          - We have removed 'allow-modals' so alert-banner ads fail to execute.
+          - We omit 'allow-popups' and 'allow-popups-to-escape-sandbox' so click-redirects fail silently.
+        */
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
 
