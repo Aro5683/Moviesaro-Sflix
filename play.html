@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Stream Player</title>
   
+  <!-- Content Security Policy configured to protect media streams -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
@@ -53,14 +54,14 @@
       pointer-events: auto;       /* Absorbs rogue ad clicks landing near the bottom screen track */
     }
 
-    /* MOBILE ORIENTATION ALERT MODAL WITH AUTOMATIC TIMEOUT CLOCK */
+    /* MOBILE ORIENTATION ALERT MODAL WITH AUTOMATIC TIMEOUT CLOCK & LANGUAGE SWITCHER */
     .orientation-popup-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background-color: rgba(0, 0, 0, 0.85); /* Slightly darker backdrop for better readability */
+      background-color: rgba(0, 0, 0, 0.85); 
       display: flex;
       justify-content: center;
       align-items: center;
@@ -78,10 +79,10 @@
     .orientation-popup-card {
       background-color: #1a1a1a;
       border: 1px solid #374151;
-      padding: 28px 24px;
+      padding: 24px;
       border-radius: 12px;
       width: 85%;
-      max-width: 340px;
+      max-width: 360px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
       text-align: center;
       color: #ffffff;
@@ -93,25 +94,60 @@
       transform: scale(1);
     }
 
-    .orientation-popup-card p {
-      margin: 0 0 15px 0;
-      font-size: 1.05rem;
+    /* Language Bar Tabs Setup */
+    .lang-switcher {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #262626;
+      padding-bottom: 12px;
+    }
+
+    .lang-btn {
+      background-color: #262626;
+      color: #a3a3a3;
+      border: 1px solid #404040;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .lang-btn.active-lang {
+      background-color: #2563eb; /* Blue highlight representing selected lang context */
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    /* Instructions Content Styles */
+    .instruction-text {
+      margin: 0 0 12px 0;
+      font-size: 0.95rem;
       font-weight: 500;
       line-height: 1.5;
       color: #e5e7eb;
+      text-align: left;
+    }
+
+    .instruction-text span {
+      display: block;
+      margin-bottom: 10px;
     }
 
     /* Dynamic Visual Text Countdown Timer Area */
     .timer-badge {
       display: inline-block;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: #9ca3af;
       background-color: #262626;
       border: 1px solid #404040;
       padding: 6px 16px;
       border-radius: 50px;
-      margin-top: 5px;
+      margin-top: 10px;
     }
 
     .timer-number {
@@ -150,17 +186,31 @@
 </head>
 <body>
 
+  <!-- Custom CSS Orientation Guide Popup Overlay Layout with Dual Language Toggles -->
   <div class="orientation-popup-overlay" id="orientationPopup">
     <div class="orientation-popup-card">
-      <p>⚠️ Disable Auto orientation to make full screen video</p>
+      
+      <!-- Language Buttons Menu -->
+      <div class="lang-switcher">
+        <button class="lang-btn active-lang" id="langEnBtn">English</button>
+        <button class="lang-btn" id="langTaBtn">தமிழ்</button>
+      </div>
+
+      <!-- Variable Text Message Target Container -->
+      <div class="instruction-text" id="instructionContent">
+        <span>📱 Disable Auto orientation to make full screen video.</span>
+        <span>▶️ Once the video loads, click full screen and rotate your mobile, otherwise the video won't be visible.</span>
+      </div>
+
       <div class="timer-badge">
-        Closing automatically in <span id="countdownSeconds" class="timer-number">5</span>s...
+        <span id="timerText">Closing automatically in</span> <span id="countdownSeconds" class="timer-number">5</span>s...
       </div>
     </div>
   </div>
 
   <div class="player-container" id="playerWrapper">
     
+    <!-- Solid black shield container covering the bottom 150px -->
     <div class="bottom-shield-block" id="bottomShield"></div>
 
   </div>
@@ -171,6 +221,25 @@
       const bottomShield = document.getElementById('bottomShield');
       const popup = document.getElementById('orientationPopup');
       const timerNumber = document.getElementById('countdownSeconds');
+      const timerText = document.getElementById('timerText');
+      
+      const langEnBtn = document.getElementById('langEnBtn');
+      const langTaBtn = document.getElementById('langTaBtn');
+      const instructionContent = document.getElementById('instructionContent');
+
+      // Dictionary repository strings data
+      const translations = {
+        en: {
+          text: `<span>📱 Disable Auto orientation to make full screen video.</span>
+                 <span>▶️ Once the video loads, click full screen and rotate your mobile, otherwise the video won't be visible.</span>`,
+          timer: "Closing automatically in"
+        },
+        ta: {
+          text: `<span>📱 முழுத் திரையில் (Full Screen) வீடியோவை பார்க்க, மொபைலில் 'Auto-Rotate' ஆப்ஷனை ஆஃப் (Disable) செய்யவும்.</span>
+                 <span>▶️ வீடியோ முழுமையாக லோடு ஆனதும், 'Full Screen' பட்டனை கிளிக் செய்துவிட்டு மொபைலை திருப்பவும். இல்லையெனில் வீடியோ தெரியாது.</span>`,
+          timer: "தானாக மூடும் நேரம்"
+        }
+      };
 
       // 1. BLOCK DESKTOP PC & LAPTOP DEVICE ACCESS
       function isMobileDevice() {
@@ -192,27 +261,40 @@
         return; 
       }
 
-      // 2. TIMED AUTOMATIC POPUP MANAGER
-      let timeLeft = 5; // Duration in seconds
+      // 2. LANGUAGE EVENT TOGGLE LOGIC
+      langEnBtn.addEventListener('click', function() {
+        langEnBtn.classList.add('active-lang');
+        langTaBtn.classList.remove('active-lang');
+        instructionContent.innerHTML = translations.en.text;
+        timerText.textContent = translations.en.timer;
+      });
 
-      // Reveal the popup cleanly upon mobile confirmation
+      langTaBtn.addEventListener('click', function() {
+        langTaBtn.classList.add('active-lang');
+        langEnBtn.classList.remove('active-lang');
+        instructionContent.innerHTML = translations.ta.text;
+        timerText.textContent = translations.ta.timer;
+      });
+
+      // 3. TIMED AUTOMATIC POPUP MANAGER
+      let timeLeft = 5; 
+
       setTimeout(function() {
         popup.classList.add('show');
         
-        // Begin processing active count down tracking loop ticks every 1000ms
         const countdownInterval = setInterval(function() {
           timeLeft--;
           timerNumber.textContent = timeLeft;
 
           if (timeLeft <= 0) {
-            clearInterval(countdownInterval); // Kill ticker routine 
-            popup.classList.remove('show');   // Remove the overlay from screen view
+            clearInterval(countdownInterval); 
+            popup.classList.remove('show');   
           }
         }, 1000);
 
       }, 300);
 
-      // 3. SECURITY INTERCEPT COMMANDS (RIGHT CLICK + INSPECT DEFUSE)
+      // 4. SECURITY INTERCEPT COMMANDS (RIGHT CLICK + INSPECT DEFUSE)
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
       document.addEventListener('keydown', function(e) {
         if (e.keyCode === 123) { e.preventDefault(); return false; }
@@ -222,7 +304,7 @@
 
       window.open = function() { return null; };
 
-      // 4. PARSE TRACK UNIQUE IDENTIFIER & INJECT LOCKED IFRAME
+      // 5. PARSE TRACK UNIQUE IDENTIFIER & INJECT LOCKED IFRAME
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -231,8 +313,6 @@
 
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
-        
-        // Disable scroll support explicitly at the legacy iframe element definition parameter track
         iframe.setAttribute('scrolling', 'no');
         
         iframe.setAttribute('allowfullscreen', 'true');
@@ -242,10 +322,8 @@
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-presentation');
 
-        // Insert the secure iframe element underneath the absolute bottom shield node
         wrapper.insertBefore(iframe, bottomShield);
 
-        // Instantly sanitize the address URL query tracking strings
         try {
           const cleanUrl = window.location.protocol + "//" + window.location.host + "/play";
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
