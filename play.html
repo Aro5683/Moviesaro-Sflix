@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Stream Player</title>
   
+  <!-- Content Security Policy configured to protect media streams -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
@@ -23,6 +24,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* Relative wrapper acting as the bounding canvas anchor */
     .player-container {
       width: 100%;
       height: 100%;
@@ -40,54 +42,67 @@
       border: none !important;
       outline: none !important;
       display: block;
+      z-index: 1; /* Sits underneath the control layer button system */
       transition: all 0.3s ease;
     }
 
-    /* FLOATING ORIENTATION ASSISTANCE PANEL */
+    /* 
+      FLOATING ORIENTATION OVERLAY PANEL 
+      Positioned absolutely inside the parent container to sit perfectly on top of the iframe player.
+    */
     .floating-orientation-menu {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
+      position: absolute;
+      top: 15px;      /* Positioned at the top area so it doesn't block standard player timelines at the bottom */
+      right: 15px;
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 9999999;
+      flex-direction: row; /* Arranged side-by-side to look like a control bar */
+      gap: 8px;
+      z-index: 9999999;    /* Forces it to render on top of the running iframe video component */
+      pointer-events: none; /* Allows transparent accidental click bypass outside the actual buttons */
     }
 
     .floating-btn {
-      background-color: rgba(26, 26, 26, 0.9);
+      background-color: rgba(20, 20, 20, 0.85);
       color: #ffffff;
       border: 1px solid #374151;
-      padding: 10px 14px;
-      border-radius: 50px;
-      font-size: 0.85rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      gap: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
       transition: all 0.2s ease;
+      pointer-events: auto; /* Forces the button components to remain clickable */
     }
 
     .floating-btn:active {
       transform: scale(0.95);
-      background-color: #3b82f6;
+      background-color: #2563eb;
     }
 
     .floating-btn.active-mode {
-      background-color: #22c55e;
-      border-color: #22c55e;
+      background-color: #16a34a; /* Distinctive green layout indicator matching current state choice */
+      border-color: #16a34a;
     }
 
-    /* Fallback manual css forced transformation if system rotation is disabled on mobile */
+    /* Fallback landscape CSS transform mode configuration */
     .forced-landscape iframe {
       width: 100vh !important;
       height: 100vw !important;
       transform: rotate(90deg);
       transform-origin: center;
+    }
+
+    /* Shifts buttons position if forced rotation mode handles coordinate tracks */
+    .forced-landscape .floating-orientation-menu {
+      top: 15px;
+      right: auto;
+      left: 15px;
     }
 
     .error-wrapper {
@@ -101,6 +116,7 @@
       text-align: center;
       padding: 30px;
       box-sizing: border-box;
+      z-index: 2;
     }
 
     .error-title {
@@ -119,16 +135,19 @@
 </head>
 <body>
 
-  <div class="floating-orientation-menu" id="orientationMenu" style="display: none;">
-    <button class="floating-btn active-mode" id="btnPortrait">
-      📱 Portrait View
-    </button>
-    <button class="floating-btn" id="btnLandscape">
-      🔄 Force Landscape
-    </button>
-  </div>
+  <div class="player-container" id="playerWrapper">
+    
+    <!-- Floating Configuration Options Menu Container (Now nested inside the player wrapper) -->
+    <div class="floating-orientation-menu" id="orientationMenu" style="display: none;">
+      <button class="floating-btn active-mode" id="btnPortrait">
+        📱 Portrait
+      </button>
+      <button class="floating-btn" id="btnLandscape">
+        🔄 Landscape
+      </button>
+    </div>
 
-  <div class="player-container" id="playerWrapper"></div>
+  </div>
 
   <script>
     (function() {
@@ -137,7 +156,7 @@
       const btnPortrait = document.getElementById('btnPortrait');
       const btnLandscape = document.getElementById('btnLandscape');
 
-      // 1. BLOCK RECEPTIVITY ON DESKTOPS / PC
+      // 1. BLOCK DESKTOP PC & LAPTOP ACCESS TERMINAL TRACKS
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -155,22 +174,25 @@
         return; 
       }
 
+      // Render overlay navigation panel options on valid touch device verification
       menu.style.display = 'flex';
 
-      // 2. CSS-BASED ROTATION BUTTONS
-      btnPortrait.addEventListener('click', function() {
+      // 2. INTERACTION EVENT TRACKING HANDLERS
+      btnPortrait.addEventListener('click', function(e) {
+        e.stopPropagation();
         wrapper.classList.remove('forced-landscape');
         btnPortrait.classList.add('active-mode');
         btnLandscape.classList.remove('active-mode');
       });
 
-      btnLandscape.addEventListener('click', function() {
+      btnLandscape.addEventListener('click', function(e) {
+        e.stopPropagation();
         wrapper.classList.add('forced-landscape');
         btnLandscape.classList.add('active-mode');
         btnPortrait.classList.remove('active-mode');
       });
 
-      // 3. SECURE SECURITY INTERRUPTS
+      // 3. SECURITY SCRIPT INJECTIONS
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
       document.addEventListener('keydown', function(e) {
         if (e.keyCode === 123) { e.preventDefault(); return false; }
@@ -180,7 +202,7 @@
 
       window.open = function() { return null; };
 
-      // 4. GENERATING INJECTION & INITIALIZING FULLSCREEN CAPABILITIES
+      // 4. PARSE STREAM SOURCE DATA & MOUNT SECURED FRAME LAYER
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -190,20 +212,16 @@
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
         
-        // Native full screen support declarations attributes
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('webkitallowfullscreen', 'true');
         iframe.setAttribute('mozallowfullscreen', 'true');
         
-        // CRITICAL FIX: Grant direct hardware video element fullscreen permissions 
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
-        
-        // CRITICAL FIX: sandbox must include 'allow-modals' and 'allow-presentation' to trigger the video component's landscape layer
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-presentation');
 
         wrapper.appendChild(iframe);
 
-        // Remove tracking keys from bar
+        // History track parameter sweep cleanup execution
         try {
           const cleanUrl = window.location.protocol + "//" + window.location.host + "/play";
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
