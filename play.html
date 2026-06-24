@@ -8,7 +8,6 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
-    /* Absolute full-screen bounds optimized for dynamic mobile views */
     html, body {
       margin: 0;
       padding: 0;
@@ -44,7 +43,7 @@
       transition: all 0.3s ease;
     }
 
-    /* FLOATING ROTATION CONTROL OPTIONS PANEL */
+    /* FLOATING ORIENTATION ASSISTANCE PANEL */
     .floating-orientation-menu {
       position: fixed;
       bottom: 20px;
@@ -52,11 +51,11 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      z-index: 9999999; /* Float strictly on top of the iframe player */
+      z-index: 9999999;
     }
 
     .floating-btn {
-      background-color: rgba(26, 26, 26, 0.85);
+      background-color: rgba(26, 26, 26, 0.9);
       color: #ffffff;
       border: 1px solid #374151;
       padding: 10px 14px;
@@ -75,16 +74,15 @@
 
     .floating-btn:active {
       transform: scale(0.95);
-      background-color: #3b82f6; /* Highlight blue on mobile touch */
-      border-color: #3b82f6;
+      background-color: #3b82f6;
     }
 
     .floating-btn.active-mode {
-      background-color: #22c55e; /* Green indicating current active layout choice */
+      background-color: #22c55e;
       border-color: #22c55e;
     }
 
-    /* Force aspect ratio simulation if a user forces portrait vs landscape on mobile locks */
+    /* Fallback manual css forced transformation if system rotation is disabled on mobile */
     .forced-landscape iframe {
       width: 100vh !important;
       height: 100vw !important;
@@ -92,7 +90,6 @@
       transform-origin: center;
     }
 
-    /* Error wrapper layouts */
     .error-wrapper {
       display: flex;
       flex-direction: column;
@@ -140,9 +137,7 @@
       const btnPortrait = document.getElementById('btnPortrait');
       const btnLandscape = document.getElementById('btnLandscape');
 
-      // ==========================================
-      // 1. BLOCK RECEPTIVITY ON PC & LAPTOP DEVICES
-      // ==========================================
+      // 1. BLOCK RECEPTIVITY ON DESKTOPS / PC
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -160,12 +155,9 @@
         return; 
       }
 
-      // Show floating options panel since device is valid mobile
       menu.style.display = 'flex';
 
-      // ==========================================
-      // 2. ORIENTATION INTERACTION CONTROLS
-      // ==========================================
+      // 2. CSS-BASED ROTATION BUTTONS
       btnPortrait.addEventListener('click', function() {
         wrapper.classList.remove('forced-landscape');
         btnPortrait.classList.add('active-mode');
@@ -176,14 +168,9 @@
         wrapper.classList.add('forced-landscape');
         btnLandscape.classList.add('active-mode');
         btnPortrait.classList.remove('active-mode');
-        
-        // Alert helpful quick instruction reminder
-        alert("For the best experience, turn on your phone's 'Auto-Rotate' setting and tilt your device horizontally.");
       });
 
-      // ==========================================
-      // 3. DISABLE DEVELOPER INTERACTION COMMANDS
-      // ==========================================
+      // 3. SECURE SECURITY INTERRUPTS
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
       document.addEventListener('keydown', function(e) {
         if (e.keyCode === 123) { e.preventDefault(); return false; }
@@ -192,12 +179,8 @@
       });
 
       window.open = function() { return null; };
-      window.alert = function(msg) { console.log("Alert bypassed:", msg); return true; };
-      window.confirm = function() { return true; };
 
-      // ==========================================
-      // 4. EXECUTE MOUNT PARSE & CLEAN TRACKS
-      // ==========================================
+      // 4. GENERATING INJECTION & INITIALIZING FULLSCREEN CAPABILITIES
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -206,20 +189,28 @@
 
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
+        
+        // Native full screen support declarations attributes
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('webkitallowfullscreen', 'true');
         iframe.setAttribute('mozallowfullscreen', 'true');
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+        
+        // CRITICAL FIX: Grant direct hardware video element fullscreen permissions 
+        iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
+        
+        // CRITICAL FIX: sandbox must include 'allow-modals' and 'allow-presentation' to trigger the video component's landscape layer
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-presentation');
 
         wrapper.appendChild(iframe);
 
+        // Remove tracking keys from bar
         try {
           const cleanUrl = window.location.protocol + "//" + window.location.host + "/play";
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
         } catch (historyErr) {}
 
       } else {
-        menu.style.display = 'none'; // Hide if layout is just error screen
+        menu.style.display = 'none';
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Invalid Request</div>
