@@ -264,80 +264,41 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 </script><script>
-document.addEventListener("DOMContentLoaded", function() {
-
+(function() {
     // ==========================================================================
-    // 1. DYNAMIC AUTO-FILTER FORCING ENGINE (Nuxt Compliant)
+    // NATIVE URL PARAMETER INJECTION (Loads filters & sorting by default instantly)
     // ==========================================================================
-    async function runAutoFilterSequence() {
-        const sleep = ms => new Promise(res => setTimeout(res, ms));
-
-        // Locate outer filter menu boxes (Genre, Year, Country)
-        const filterBoxes = document.querySelectorAll('.outer-filter-item');
-        if (!filterBoxes || filterBoxes.length === 0) return;
-
-        // 1. Force visual UI layout states immediately to look perfect
-        filterBoxes.forEach(box => {
-            const valDiv = box.querySelector('.value');
-            if (valDiv) {
-                if (box.classList.contains('genre')) valDiv.textContent = 'All';
-                if (box.classList.contains('country')) {
-                    valDiv.textContent = 'India';
-                    box.classList.add('active'); // Turn India button highlight green
-                }
-            }
-        });
-
-        // 2. Trigger Country Dropdown -> Pick India
-        const countryBox = document.querySelector('.outer-filter-item.country');
-        if (countryBox) {
-            countryBox.click(); // Open internal Nuxt popover
-            await sleep(150);   // Wait for content items to render in DOM
-
-            // Search over dynamic list components (using standard Nuxt scope data attributes)
-            const targetOptions = document.querySelectorAll('[data-v-4cc40fd5], .filter-data-item, .filter-item, div');
-            for (let opt of targetOptions) {
-                if (opt.textContent.trim() === 'India') {
-                    opt.click(); // Select India
-                    break;
-                }
-            }
-            await sleep(150);
-        }
-
-        // 3. Open More Filters Menu to get Tamil Dub
-        const moreFilterBtn = document.querySelector('.more-filter');
-        if (moreFilterBtn) {
-            moreFilterBtn.click(); // Open drawer 
-            await sleep(250);
-
-            const extendedOptions = document.querySelectorAll('[data-v-4cc40fd5], .filter-data-item, div');
-            
-            // First pass: Active Genre All
-            for (let opt of extendedOptions) {
-                if (opt.textContent.trim() === 'All') {
-                    opt.click();
-                    break;
-                }
-            }
-
-            // Second pass: Track down Tamil / Tamil Dub options
-            for (let opt of extendedOptions) {
-                const text = opt.textContent.trim().toLowerCase();
-                if (text === 'tamil' || text === 'tamil dub') {
-                    opt.click(); // Trigger query update event lifecycle
-                    break;
-                }
-            }
-            
-            // Close filter panel drawer
-            moreFilterBtn.click();
-        }
+    const currentUrl = new URL(window.location.href);
+    
+    // Evaluate if standard filter parameters or sort metrics are completely missing
+    if (!currentUrl.searchParams.has('country') || !currentUrl.searchParams.has('sort')) {
+        
+        // Define your native out-of-the-box defaults
+        currentUrl.searchParams.set('genre', 'all');
+        currentUrl.searchParams.set('language', 'tamil-dub'); 
+        currentUrl.searchParams.set('country', 'india');
+        
+        // Sets sorting order cleanly to Latest (Common platform keys: 'latest' or 'create_time')
+        currentUrl.searchParams.set('sort', 'latest'); 
+        
+        // Quietly slip parameters into the browser history engine before Nuxt executes requests
+        window.history.replaceState(null, '', currentUrl.toString());
     }
+})();
 
-    // Delayed call to ensure full application framework mount completion
-    setTimeout(runAutoFilterSequence, 600);
-
+document.addEventListener("DOMContentLoaded", function() {
+    // Optional: Syncs static element texts instantly to look visually accurate
+    const filterBoxes = document.querySelectorAll('.outer-filter-item');
+    filterBoxes.forEach(box => {
+        const valDiv = box.querySelector('.value');
+        if (valDiv) {
+            if (box.classList.contains('genre')) valDiv.textContent = 'All';
+            if (box.classList.contains('country')) {
+                valDiv.textContent = 'India';
+                box.classList.add('active'); // Turn India badge green
+            }
+        }
+    });
 });
 </script>
 </body></html>
