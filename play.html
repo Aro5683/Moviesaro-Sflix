@@ -40,7 +40,7 @@
       overflow: hidden !important;
     }
 
-    /* SOLID BLACK BOTTOM MASK */
+    /* SOLID BLACK BOTTOM MASK TO COVER AD FOOTERS */
     .bottom-shield-block {
       position: absolute;
       bottom: 0;
@@ -52,7 +52,7 @@
       pointer-events: auto;
     }
 
-    /* LANGUAGE POPUP OVERLAY */
+    /* LANGUAGE POPUP OVERLAY WITH AUTO TIMEOUT COUNTER */
     .orientation-popup-overlay {
       position: fixed;
       top: 0;
@@ -203,16 +203,37 @@
 
   <script>
     (function() {
-      // --- ADVANCED AD-BLOCKING REDIRECT INTERCEPTOR LAYER ---
-      // 1. Trap page unload requests trying to open ad websites
-      let allowNavigation = false;
-      window.onbeforeunload = function() {
-        if (!allowNavigation) {
-          return "Are you sure you want to view an ad?";
-        }
-      };
+      // ========================================================
+      // INTERCEPTOR METHOD 1: REAL-TIME DOM ELEMENT MUTATION OBSERVER
+      // ========================================================
+      // Scans for dynamically injected elements inside your wrapper page container
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === 1) { // Node is an Element
+              const tag = node.tagName.toLowerCase();
+              const className = node.className || '';
+              const idName = node.id || '';
 
-      // 2. Clear out window open parameters globally
+              // Targets typical third-party wrapper divs used by pop-under engines
+              if (tag === 'div' && (className.includes('ad-') || className.includes('banner') || idName.includes('popunder'))) {
+                node.remove(); 
+                console.log('Blocked dynamic ad wrapper mutation asset.');
+              }
+              // Immediately destroys hidden click-capture nodes that try to trap user touch inputs
+              if (node.style && (node.style.zIndex > 999999 && node !== popup)) {
+                node.remove();
+              }
+            }
+          });
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // ========================================================
+      // INTERCEPTOR METHOD 2: PARENT REDIRECT & UNLOAD FREEZER
+      // ========================================================
+      window.onbeforeunload = function() { return "Prevent redirect attempt."; };
       window.open = function() { return null; };
 
       const wrapper = document.getElementById('playerWrapper');
@@ -238,6 +259,7 @@
         }
       };
 
+      // Desktop validation
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -257,6 +279,7 @@
         return; 
       }
 
+      // Language Switcher Event Listeners
       langEnBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         langEnBtn.classList.add('active-lang');
@@ -273,6 +296,7 @@
         timerText.textContent = translations.ta.timer;
       });
 
+      // 5-Second Popup Timer Loop
       let timeLeft = 5; 
       setTimeout(function() {
         popup.classList.add('show');
@@ -286,8 +310,10 @@
         }, 1000);
       }, 300);
 
+      // Disable Right Click Interaction
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
+      // Build & Inject Stream Target Iframe Layer
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -302,9 +328,10 @@
         iframe.setAttribute('mozallowfullscreen', 'true');
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
-        // Removed allow-top-navigation entirely. 
-        // Ads can no longer force-refresh your actual browser tab window.
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+        // INTERCEPTOR METHOD 3: STRICT AD SCRIPT ISOLATION
+        // Leaving out allow-top-navigation, allow-popups, and allow-same-origin 
+        // to block tracking codes entirely.
+        iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
 
