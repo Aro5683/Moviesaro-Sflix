@@ -1,24 +1,30 @@
-<!doctype html>
-
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stream Player</title>
   
-
-  
-  
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
-    /* Reset margins and eliminate scrollbars for a true edge-to-edge full-screen layout */
+    /* Absolute full-screen bounds optimized for both portrait & landscape mobile displays */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      background-color: #000000; /* Pure black background matching standard players */
+      background-color: #000000;
       overflow: hidden;
-      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      /* Disable user selections and highlight highlights on mobile tap */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    /* Container fills up the absolute width and height of the view screen */
     .player-container {
       width: 100%;
       height: 100%;
@@ -26,7 +32,6 @@
       background-color: #000000;
     }
 
-    /* Embedded video frame settings */
     .player-container iframe {
       width: 100% !important;
       height: 100% !important;
@@ -35,7 +40,7 @@
       display: block;
     }
 
-    /* Fallback layout interface shown if the unique id parameter is absent */
+    /* Error wrapper styling used for blocked PC views or invalid playback tracking links */
     .error-wrapper {
       display: flex;
       flex-direction: column;
@@ -45,94 +50,131 @@
       height: 100%;
       color: #9ca3af;
       text-align: center;
-      padding: 20px;
+      padding: 30px;
       box-sizing: border-box;
     }
 
     .error-title {
       color: #ef4444;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
     
     .error-text {
-      font-size: 1rem;
-      max-width: 400px;
+      font-size: 0.95rem;
+      max-width: 320px;
+      line-height: 1.5;
     }
   </style>
+</head>
+<body>
 
-
-
-  <div class="player-container" id="playerWrapper">
-    </div>
+  <div class="player-container" id="playerWrapper"></div>
 
   <script>
     (function() {
-      // 1. PROACTIVE POPUP DEFUSE
-      // Instantly nullify window.open execution at the parent environment scope.
-      // If a hidden click tracker tries to breakout into a new tab via window.open, it safely hits this dummy function and fails.
-      window.open = function() { 
-        console.warn("Blocked an intentional window.open popup attempt.");
-        return null; 
-      };
+      const wrapper = document.getElementById('playerWrapper');
 
-      // Neutralize typical prompt confirmation spam techniques used by ad scripts
+      // ==========================================
+      // 1. BLOCK RECEPTIVITY ON PC & LAPTOP DEVICES
+      // ==========================================
+      function isMobileDevice() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        // Strict RegExp checklist matching common mobile operating system tags
+        const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+        
+        // Also check modern iPads running desktop safari matching touch capabilities
+        const isIpadTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(userAgent));
+        
+        return mobileRegex.test(userAgent) || isIpadTouch;
+      }
+
+      if (!isMobileDevice()) {
+        // Halt everything immediately and render explicit device block notice
+        wrapper.innerHTML = `
+          <div class="error-wrapper">
+            <div class="error-title">Device Not Supported</div>
+            <div class="error-text">This streaming link is strictly reserved for mobile and tablet views. Please open this link using a smartphone device.</div>
+          </div>
+        `;
+        return; // Abort execution loop
+      }
+
+      // ==========================================
+      // 2. DISABLE DEVELOPER INTERACTION COMMANDS
+      // ==========================================
+      // Disable Context Mouse Right-Clicks
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+      });
+
+      // Intercept and counter standard key sequences targeting source inspect modes
+      document.addEventListener('keydown', function(e) {
+        // Block F12 Key
+        if (e.keyCode === 123) {
+          e.preventDefault();
+          return false;
+        }
+        // Block Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Elements Selector)
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
+          e.preventDefault();
+          return false;
+        }
+        // Block Ctrl+U (View Source Code)
+        if (e.ctrlKey && e.keyCode === 85) {
+          e.preventDefault();
+          return false;
+        }
+        // Block Ctrl+S (Save Page Command)
+        if (e.ctrlKey && e.keyCode === 83) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      // Proactive Popup Defusal
+      window.open = function() { return null; };
       window.alert = function() { return true; };
       window.confirm = function() { return true; };
 
-      const wrapper = document.getElementById('playerWrapper');
-
-      // 2. PARSE THE VIDEO UNIQUE IDENTIFIER
-      // Grabs the parameter appended from your main site (e.g., ?id=the-little-mermaid-SvoSpr1Kd3)
+      // ==========================================
+      // 3. EXECUTE MOUNT PARSE & CLEAN TRACKS
+      // ==========================================
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
       if (uniqueKey && uniqueKey.trim() !== "") {
-        // Construct the targeted sflix streaming address string
         const targetStreamUrl = `https://sflix.film/spa/videoPlayPage/movies/${encodeURIComponent(uniqueKey.trim())}`;
 
-        // 3. GENERATE PROTECTED IFRAME
+        // Generate the sandboxed player frame 
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('webkitallowfullscreen', 'true');
         iframe.setAttribute('mozallowfullscreen', 'true');
         
-        /* * STRICTOR SANDBOX SETTINGS:
-         * - allow-scripts: Permits internal streaming engine operations and layout setups.
-         * - allow-same-origin: Allows cookie/storage handshakes strictly tied to sflix.film endpoints.
-         * - allow-forms: Allows input controls (like search boxes or login menus within the stream page).
-         * * CRITICAL: By purposely leaving out 'allow-popups', 'allow-popups-to-escape-sandbox', 
-         * and 'allow-top-navigation', any background image clicks, overlays, or redirect links 
-         * attempting to spawn secondary tabs are strictly blocked by the browser engine.
-         */
+        // Anti-popup mobile sandboxing values configuration
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
 
-        // Mount frame element onto interface
         wrapper.appendChild(iframe);
 
-        // 4. AUTOMATIC ADDRESS BAR CLEANUP (HISTORY API)
-        // Replaces current browser address track right after launching frame assets.
-        // Drops "?id=..." parameter string seamlessly without causing a page refresh.
+        // Address Bar Track Parameter Removal logic
         try {
-          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          const cleanUrl = window.location.protocol + "//" + window.location.host + "/play";
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
-        } catch (historyErr) {
-          console.error("Address manipulation error context:", historyErr);
-        }
+        } catch (historyErr) {}
 
       } else {
-        // Fallback interface placeholder 
         wrapper.innerHTML = `
           <div class="error-wrapper">
-            <div class="error-title">Invalid Playback Request</div>
-            <div class="error-text">No active video identifier key detected. Please return to the main catalog and select a movie title to watch.</div>
+            <div class="error-title">Invalid Request</div>
+            <div class="error-text">No active video identifier key detected. Return to the homepage to watch.</div>
           </div>
         `;
       }
     })();
   </script>
 
-
-</!doctype>
+</body>
+</html>
