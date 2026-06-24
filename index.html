@@ -96,7 +96,7 @@ img.header-logo,
 
 /* Floating transparent container over the site background */
 .custom-transparent-header {
-    position: fixed; 
+     
     top: 0;
     left: 0;
     width: 100%;
@@ -105,7 +105,7 @@ img.header-logo,
     align-items: center;
     justify-content: flex-start; 
     padding: 0 24px; 
-    background: transparent; 
+    background-color: transparent; 
     box-sizing: border-box;
     z-index: 9999; 
     pointer-events: none; 
@@ -263,4 +263,50 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
-</script></body></html>
+</script><script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    // ==========================================================================
+    // 1. FORCED DEFAULT FILTER LOGIC (Genre: All, Language: Tamil Dub, Country: India)
+    // ==========================================================================
+    function applyDefaultFilters() {
+        // Force text alterations visually so users see the accurate active states instantly
+        const filterItems = document.querySelectorAll('.outer-filter-item');
+        filterItems.forEach(item => {
+            const valDiv = item.querySelector('.value');
+            if (valDiv) {
+                // Set defaults visually
+                if (item.classList.contains('genre')) {
+                    valDiv.textContent = 'All';
+                } else if (item.classList.contains('country')) {
+                    valDiv.textContent = 'India';
+                    item.classList.add('active'); // Keep India highlighted green
+                }
+            }
+        });
+
+        // Simulate internal click sequence to force Nuxt API updates
+        // Find filter values inside hidden panel sheets (e.g. data-v-4cc40fd5)
+        const possibleOptions = document.querySelectorAll('[data-v-4cc40fd5], .filter-data-title, .filter-item');
+        
+        let foundTamil = false;
+        possibleOptions.forEach(opt => {
+            const text = opt.textContent.trim().toLowerCase();
+            
+            // Programmatically fire native click handles if strings match up
+            if (text === 'india' || text === 'tamil' || text === 'tamil dub' || text === 'all') {
+                if (text.includes('tamil')) foundTamil = true;
+                opt.click();
+            }
+        });
+
+        // If 'Tamil Dub' is tucked away inside a nested selector, dispatch an event hook
+        if (!foundTamil) {
+            window.dispatchEvent(new CustomEvent('filter-change', { 
+                detail: { country: 'India', language: 'Tamil Dub', genre: 'All' } 
+            }));
+        }
+    }
+
+    // Run the filter trigger loop slightly after mounting to let Nuxt render first
+    setTimeout(applyDefaultFilters, 400);</script></body></html>
