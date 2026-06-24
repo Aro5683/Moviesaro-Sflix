@@ -258,4 +258,37 @@
       }
     });
   })();
+</script><script>
+  (function() {
+    // Defines your dedicated player path explicitly
+    const playerPageUrl = "/play";
+
+    // Listening in the capturing phase (true) to intercept before the SPA router takes over
+    document.addEventListener('click', function(event) {
+      const link = event.target.closest('a');
+      
+      if (link) {
+        const href = link.getAttribute('href') || link.href || '';
+        
+        // Intercept any link that targets your detail sequence
+        if (href.includes('/detail/')) {
+          event.preventDefault(); // Halt internal application routing
+          event.stopPropagation(); // Stop the event from bubbling up to the SPA router
+          
+          try {
+            // Extract the unique key after /detail/
+            const urlParts = href.split('/detail/');
+            const uniqueKey = urlParts[1].split(/[?#]/)[0];
+
+            if (uniqueKey && uniqueKey.trim() !== "") {
+              // Redirect directly to your sub-route /play while appending the clean key
+              window.location.href = `${playerPageUrl}?id=${encodeURIComponent(uniqueKey.trim())}`;
+            }
+          } catch (err) {
+            console.error('Routing intercept error:', err);
+          }
+        }
+      }
+    }, true); // <--- 'true' enables the capturing phase override
+  })();
 </script></!doctype>
