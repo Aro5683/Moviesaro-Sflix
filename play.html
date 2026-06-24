@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Stream Player</title>
   
-  <!-- Content Security Policy configured to protect media streams -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
@@ -15,7 +14,7 @@
       width: 100%;
       height: 100%;
       background-color: #000000;
-      overflow: hidden; /* Strict scroll disable on body element */
+      overflow: hidden;
       font-family: ui-sans-serif, system-ui, sans-serif;
       -webkit-user-select: none;
       -moz-user-select: none;
@@ -24,22 +23,21 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Relative wrapper acting as the absolute non-scrollable stage canvas */
     .player-container {
       width: 100%;
       height: 100%;
       position: relative;
       background-color: #000000;
-      overflow: hidden; /* Strict scroll disable inside the layout canvas wrapper */
+      overflow: hidden;
     }
 
     .player-container iframe {
       width: 100% !important;
-      height: calc(100% - 150px) !important; /* Limits player view bounds directly above the bottom block */
+      height: calc(100% - 150px) !important;
       border: none !important;
       outline: none !important;
       display: block;
-      overflow: hidden !important; /* Extra scroll guard modifier for browser engines */
+      overflow: hidden !important;
     }
 
     /* SOLID BLACK BOTTOM MASK */
@@ -49,12 +47,12 @@
       left: 0;
       width: 100%;
       height: 150px;
-      background-color: #000000; /* Matching absolute pure black */
-      z-index: 9999998;           /* Enforces placement directly above the iframe stream track */
-      pointer-events: auto;       /* Absorbs rogue ad clicks landing near the bottom screen track */
+      background-color: #000000;
+      z-index: 9999998;
+      pointer-events: auto;
     }
 
-    /* MOBILE ORIENTATION ALERT MODAL WITH AUTOMATIC TIMEOUT CLOCK & LANGUAGE SWITCHER */
+    /* LANGUAGE POPUP OVERLAY */
     .orientation-popup-overlay {
       position: fixed;
       top: 0;
@@ -65,7 +63,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 9999999; /* Forces popup visibility strictly above everything else */
+      z-index: 9999999;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.4s ease-in-out;
@@ -94,7 +92,6 @@
       transform: scale(1);
     }
 
-    /* Language Bar Tabs Setup */
     .lang-switcher {
       display: flex;
       justify-content: center;
@@ -113,16 +110,14 @@
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
 
     .lang-btn.active-lang {
-      background-color: #2563eb; /* Blue highlight representing selected lang context */
+      background-color: #2563eb;
       color: #ffffff;
       border-color: #2563eb;
     }
 
-    /* Instructions Content Styles */
     .instruction-text {
       margin: 0 0 12px 0;
       font-size: 0.95rem;
@@ -137,7 +132,6 @@
       margin-bottom: 10px;
     }
 
-    /* Dynamic Visual Text Countdown Timer Area */
     .timer-badge {
       display: inline-block;
       font-size: 0.8rem;
@@ -151,11 +145,10 @@
     }
 
     .timer-number {
-      color: #22c55e; /* Green numeric countdown highlight */
+      color: #22c55e;
       font-weight: 700;
     }
 
-    /* Error wrapper layouts */
     .error-wrapper {
       display: flex;
       flex-direction: column;
@@ -186,17 +179,13 @@
 </head>
 <body>
 
-  <!-- Custom CSS Orientation Guide Popup Overlay Layout with Dual Language Toggles -->
   <div class="orientation-popup-overlay" id="orientationPopup">
     <div class="orientation-popup-card">
-      
-      <!-- Language Buttons Menu -->
       <div class="lang-switcher">
         <button class="lang-btn active-lang" id="langEnBtn">English</button>
         <button class="lang-btn" id="langTaBtn">தமிழ்</button>
       </div>
 
-      <!-- Variable Text Message Target Container -->
       <div class="instruction-text" id="instructionContent">
         <span>📱 Disable Auto orientation to make full screen video.</span>
         <span>▶️ Once the video loads, click full screen and rotate your mobile, otherwise the video won't be visible.</span>
@@ -209,14 +198,23 @@
   </div>
 
   <div class="player-container" id="playerWrapper">
-    
-    <!-- Solid black shield container covering the bottom 150px -->
     <div class="bottom-shield-block" id="bottomShield"></div>
-
   </div>
 
   <script>
     (function() {
+      // --- ADVANCED AD-BLOCKING REDIRECT INTERCEPTOR LAYER ---
+      // 1. Trap page unload requests trying to open ad websites
+      let allowNavigation = false;
+      window.onbeforeunload = function() {
+        if (!allowNavigation) {
+          return "Are you sure you want to view an ad?";
+        }
+      };
+
+      // 2. Clear out window open parameters globally
+      window.open = function() { return null; };
+
       const wrapper = document.getElementById('playerWrapper');
       const bottomShield = document.getElementById('bottomShield');
       const popup = document.getElementById('orientationPopup');
@@ -227,7 +225,6 @@
       const langTaBtn = document.getElementById('langTaBtn');
       const instructionContent = document.getElementById('instructionContent');
 
-      // Dictionary repository strings data
       const translations = {
         en: {
           text: `<span>📱 Disable Auto orientation to make full screen video.</span>
@@ -241,7 +238,6 @@
         }
       };
 
-      // 1. BLOCK DESKTOP PC & LAPTOP DEVICE ACCESS
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -261,55 +257,37 @@
         return; 
       }
 
-      // 2. LANGUAGE EVENT TOGGLE LOGIC
-      langEnBtn.addEventListener('click', function() {
+      langEnBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
         langEnBtn.classList.add('active-lang');
         langTaBtn.classList.remove('active-lang');
         instructionContent.innerHTML = translations.en.text;
         timerText.textContent = translations.en.timer;
       });
 
-      // Prevent parent trigger bubbling bugs on touch screens
-      langEnBtn.addEventListener('touchend', function(e) { e.stopPropagation(); });
-
-      langTaBtn.addEventListener('click', function() {
+      langTaBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
         langTaBtn.classList.add('active-lang');
         langEnBtn.classList.remove('active-lang');
         instructionContent.innerHTML = translations.ta.text;
         timerText.textContent = translations.ta.timer;
       });
 
-      langTaBtn.addEventListener('touchend', function(e) { e.stopPropagation(); });
-
-      // 3. TIMED AUTOMATIC POPUP MANAGER
       let timeLeft = 5; 
-
       setTimeout(function() {
         popup.classList.add('show');
-        
         const countdownInterval = setInterval(function() {
           timeLeft--;
           timerNumber.textContent = timeLeft;
-
           if (timeLeft <= 0) {
             clearInterval(countdownInterval); 
             popup.classList.remove('show');   
           }
         }, 1000);
-
       }, 300);
 
-      // 4. SECURITY INTERCEPT COMMANDS (RIGHT CLICK + INSPECT DEFUSE)
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-      document.addEventListener('keydown', function(e) {
-        if (e.keyCode === 123) { e.preventDefault(); return false; }
-        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); return false; }
-        if (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) { e.preventDefault(); return false; }
-      });
 
-      window.open = function() { return null; };
-
-      // 5. PARSE TRACK UNIQUE IDENTIFIER & INJECT LOCKED IFRAME
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -319,18 +297,13 @@
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
         iframe.setAttribute('scrolling', 'no');
-        
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('webkitallowfullscreen', 'true');
         iframe.setAttribute('mozallowfullscreen', 'true');
-        
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
-        /* 
-          ANTI-POPUP AND ANTI-OVERLAY ADS MODIFICATIONS:
-          - We have removed 'allow-modals' so alert-banner ads fail to execute.
-          - We omit 'allow-popups' and 'allow-popups-to-escape-sandbox' so click-redirects fail silently.
-        */
+        // Removed allow-top-navigation entirely. 
+        // Ads can no longer force-refresh your actual browser tab window.
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
