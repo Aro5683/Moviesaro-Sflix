@@ -31,6 +31,22 @@
       overflow: hidden;
     }
 
+    /* Add this inside your /play page styling */
+.player-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Force the iframe to scale slightly larger to push external site ads off-screen */
+.player-container iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+  transform: scale(1.02); /* Subtle zoom crops out thin border banner placements */
+}
     .player-container iframe {
       width: 100% !important;
       height: calc(100% - 150px) !important;
