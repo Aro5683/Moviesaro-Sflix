@@ -31,6 +31,18 @@
       overflow: hidden;
     }
 
+    /* Transparent shield overlay specifically to kill unexpected ad popups before they start */
+    .click-protector {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 150px);
+      z-index: 10;
+      background: transparent;
+      pointer-events: auto;
+    }
+
     .player-container iframe {
       width: 100% !important;
       height: calc(100% - 150px) !important;
@@ -38,9 +50,9 @@
       outline: none !important;
       display: block;
       overflow: hidden !important;
+      z-index: 1;
     }
 
-    /* SOLID BLACK BOTTOM MASK TO COVER AD FOOTERS */
     .bottom-shield-block {
       position: absolute;
       bottom: 0;
@@ -52,7 +64,6 @@
       pointer-events: auto;
     }
 
-    /* LANGUAGE POPUP OVERLAY WITH AUTO TIMEOUT COUNTER */
     .orientation-popup-overlay {
       position: fixed;
       top: 0;
@@ -198,46 +209,23 @@
   </div>
 
   <div class="player-container" id="playerWrapper">
+    <div class="click-protector" id="clickShield"></div>
     <div class="bottom-shield-block" id="bottomShield"></div>
   </div>
 
   <script>
     (function() {
-      // ========================================================
-      // INTERCEPTOR METHOD 1: REAL-TIME DOM ELEMENT MUTATION OBSERVER
-      // ========================================================
-      // Scans for dynamically injected elements inside your wrapper page container
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === 1) { // Node is an Element
-              const tag = node.tagName.toLowerCase();
-              const className = node.className || '';
-              const idName = node.id || '';
-
-              // Targets typical third-party wrapper divs used by pop-under engines
-              if (tag === 'div' && (className.includes('ad-') || className.includes('banner') || idName.includes('popunder'))) {
-                node.remove(); 
-                console.log('Blocked dynamic ad wrapper mutation asset.');
-              }
-              // Immediately destroys hidden click-capture nodes that try to trap user touch inputs
-              if (node.style && (node.style.zIndex > 999999 && node !== popup)) {
-                node.remove();
-              }
-            }
-          });
-        });
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-
-      // ========================================================
-      // INTERCEPTOR METHOD 2: PARENT REDIRECT & UNLOAD FREEZER
-      // ========================================================
-      window.onbeforeunload = function() { return "Prevent redirect attempt."; };
+      // 1. FREEZE MALICIOUS OUTWARD WINDOW NAVIGATION REDIRECTS
       window.open = function() { return null; };
+      
+      let blockUnload = true;
+      window.onbeforeunload = function() {
+        if(blockUnload) return "Prevent popup tab redirection.";
+      };
 
       const wrapper = document.getElementById('playerWrapper');
       const bottomShield = document.getElementById('bottomShield');
+      const clickShield = document.getElementById('clickShield');
       const popup = document.getElementById('orientationPopup');
       const timerNumber = document.getElementById('countdownSeconds');
       const timerText = document.getElementById('timerText');
@@ -259,7 +247,6 @@
         }
       };
 
-      // Desktop validation
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -269,6 +256,7 @@
 
       if (!isMobileDevice()) {
         bottomShield.style.display = 'none';
+        clickShield.style.display = 'none';
         popup.style.display = 'none'; 
         wrapper.innerHTML = `
           <div class="error-wrapper">
@@ -279,7 +267,7 @@
         return; 
       }
 
-      // Language Switcher Event Listeners
+      // Language configuration binds
       langEnBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         langEnBtn.classList.add('active-lang');
@@ -296,7 +284,7 @@
         timerText.textContent = translations.ta.timer;
       });
 
-      // 5-Second Popup Timer Loop
+      // 5-Second Timer
       let timeLeft = 5; 
       setTimeout(function() {
         popup.classList.add('show');
@@ -310,10 +298,27 @@
         }, 1000);
       }, 300);
 
-      // Disable Right Click Interaction
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
-      // Build & Inject Stream Target Iframe Layer
+      // 2. INTELLIGENT CLICK PROTECTOR LAYER
+      // Tapping the video passes through safely, but invisible background ad tags are denied.
+      clickShield.addEventListener('click', function(e) {
+        clickShield.style.pointerEvents = 'none'; // Temporarily drop shield so click lands on sflix media player
+        
+        setTimeout(() => {
+          clickShield.style.pointerEvents = 'auto'; // Reinstate shield instantly (50ms) to block any popup spawns
+        }, 50);
+      });
+
+      // Handle touch devices safely
+      clickShield.addEventListener('touchstart', function(e) {
+        clickShield.style.pointerEvents = 'none';
+        setTimeout(() => {
+          clickShield.style.pointerEvents = 'auto';
+        }, 50);
+      });
+
+      // Parse and construct element layer
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -328,10 +333,9 @@
         iframe.setAttribute('mozallowfullscreen', 'true');
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
-        // INTERCEPTOR METHOD 3: STRICT AD SCRIPT ISOLATION
-        // Leaving out allow-top-navigation, allow-popups, and allow-same-origin 
-        // to block tracking codes entirely.
-        iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-presentation');
+        // RE-ENABLED allow-same-origin: Crucial to let HLS media engines play the file stream.
+        // Left out allow-top-navigation & allow-popups to keep ad tracking blocks high.
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
 
@@ -342,6 +346,7 @@
 
       } else {
         bottomShield.style.display = 'none';
+        clickShield.style.display = 'none';
         popup.style.display = 'none';
         wrapper.innerHTML = `
           <div class="error-wrapper">
