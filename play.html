@@ -31,18 +31,6 @@
       overflow: hidden;
     }
 
-    /* Transparent shield overlay specifically to kill unexpected ad popups before they start */
-    .click-protector {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: calc(100% - 150px);
-      z-index: 10;
-      background: transparent;
-      pointer-events: auto;
-    }
-
     .player-container iframe {
       width: 100% !important;
       height: calc(100% - 150px) !important;
@@ -50,6 +38,7 @@
       outline: none !important;
       display: block;
       overflow: hidden !important;
+      position: relative;
       z-index: 1;
     }
 
@@ -209,23 +198,33 @@
   </div>
 
   <div class="player-container" id="playerWrapper">
-    <div class="click-protector" id="clickShield"></div>
     <div class="bottom-shield-block" id="bottomShield"></div>
   </div>
 
   <script>
     (function() {
-      // 1. FREEZE MALICIOUS OUTWARD WINDOW NAVIGATION REDIRECTS
+      // 1. SILENT POPUP TERMINATOR
       window.open = function() { return null; };
       
-      let blockUnload = true;
       window.onbeforeunload = function() {
-        if(blockUnload) return "Prevent popup tab redirection.";
+        return "Preventing ad redirect.";
       };
+
+      // 2. FOCUS BLINK HIGHER SECURITY LAYER
+      // Detects if an ad is shifting window focus away from the main document to generate popups.
+      window.addEventListener('blur', function() {
+        setTimeout(function() {
+          if (document.activeElement === document.querySelector('iframe')) {
+            // Clicks landing inside iframe are fine; let browser continue natively.
+          } else {
+            // An rogue ad tried to pull focus to a newly opened tab window background process. Force shift back!
+            window.focus();
+          }
+        }, 0);
+      });
 
       const wrapper = document.getElementById('playerWrapper');
       const bottomShield = document.getElementById('bottomShield');
-      const clickShield = document.getElementById('clickShield');
       const popup = document.getElementById('orientationPopup');
       const timerNumber = document.getElementById('countdownSeconds');
       const timerText = document.getElementById('timerText');
@@ -256,7 +255,6 @@
 
       if (!isMobileDevice()) {
         bottomShield.style.display = 'none';
-        clickShield.style.display = 'none';
         popup.style.display = 'none'; 
         wrapper.innerHTML = `
           <div class="error-wrapper">
@@ -267,7 +265,7 @@
         return; 
       }
 
-      // Language configuration binds
+      // Language Switch Controls
       langEnBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         langEnBtn.classList.add('active-lang');
@@ -300,25 +298,7 @@
 
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
-      // 2. INTELLIGENT CLICK PROTECTOR LAYER
-      // Tapping the video passes through safely, but invisible background ad tags are denied.
-      clickShield.addEventListener('click', function(e) {
-        clickShield.style.pointerEvents = 'none'; // Temporarily drop shield so click lands on sflix media player
-        
-        setTimeout(() => {
-          clickShield.style.pointerEvents = 'auto'; // Reinstate shield instantly (50ms) to block any popup spawns
-        }, 50);
-      });
-
-      // Handle touch devices safely
-      clickShield.addEventListener('touchstart', function(e) {
-        clickShield.style.pointerEvents = 'none';
-        setTimeout(() => {
-          clickShield.style.pointerEvents = 'auto';
-        }, 50);
-      });
-
-      // Parse and construct element layer
+      // Parse and construct iframe element
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -333,8 +313,9 @@
         iframe.setAttribute('mozallowfullscreen', 'true');
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
-        // RE-ENABLED allow-same-origin: Crucial to let HLS media engines play the file stream.
-        // Left out allow-top-navigation & allow-popups to keep ad tracking blocks high.
+        // BALANCED SECURE SANDBOX STRING:
+        // 'allow-same-origin' and 'allow-scripts' ensure player controls work perfectly.
+        // Leaving out 'allow-popups' blocks new windows completely from firing during clicks.
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
@@ -346,7 +327,6 @@
 
       } else {
         bottomShield.style.display = 'none';
-        clickShield.style.display = 'none';
         popup.style.display = 'none';
         wrapper.innerHTML = `
           <div class="error-wrapper">
