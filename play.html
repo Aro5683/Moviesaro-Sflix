@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://sflix.film https://*.aoneroom.com https://pacdn.aoneroom.com; img-src 'self' data: https://*.aoneroom.com https://pacdn.aoneroom.com; child-src https://sflix.film;">
   
   <style>
-    /* Absolute full-screen bounds optimized for both portrait & landscape mobile displays */
+    /* Absolute full-screen bounds optimized for dynamic mobile views */
     html, body {
       margin: 0;
       padding: 0;
@@ -17,7 +17,6 @@
       background-color: #000000;
       overflow: hidden;
       font-family: ui-sans-serif, system-ui, sans-serif;
-      /* Disable user selections and highlight highlights on mobile tap */
       -webkit-user-select: none;
       -moz-user-select: none;
       -ms-user-select: none;
@@ -30,6 +29,10 @@
       height: 100%;
       position: relative;
       background-color: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
     }
 
     .player-container iframe {
@@ -38,9 +41,58 @@
       border: none !important;
       outline: none !important;
       display: block;
+      transition: all 0.3s ease;
     }
 
-    /* Error wrapper styling used for blocked PC views or invalid playback tracking links */
+    /* FLOATING ROTATION CONTROL OPTIONS PANEL */
+    .floating-orientation-menu {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999999; /* Float strictly on top of the iframe player */
+    }
+
+    .floating-btn {
+      background-color: rgba(26, 26, 26, 0.85);
+      color: #ffffff;
+      border: 1px solid #374151;
+      padding: 10px 14px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition: all 0.2s ease;
+    }
+
+    .floating-btn:active {
+      transform: scale(0.95);
+      background-color: #3b82f6; /* Highlight blue on mobile touch */
+      border-color: #3b82f6;
+    }
+
+    .floating-btn.active-mode {
+      background-color: #22c55e; /* Green indicating current active layout choice */
+      border-color: #22c55e;
+    }
+
+    /* Force aspect ratio simulation if a user forces portrait vs landscape on mobile locks */
+    .forced-landscape iframe {
+      width: 100vh !important;
+      height: 100vw !important;
+      transform: rotate(90deg);
+      transform-origin: center;
+    }
+
+    /* Error wrapper layouts */
     .error-wrapper {
       display: flex;
       flex-direction: column;
@@ -70,76 +122,81 @@
 </head>
 <body>
 
+  <div class="floating-orientation-menu" id="orientationMenu" style="display: none;">
+    <button class="floating-btn active-mode" id="btnPortrait">
+      📱 Portrait View
+    </button>
+    <button class="floating-btn" id="btnLandscape">
+      🔄 Force Landscape
+    </button>
+  </div>
+
   <div class="player-container" id="playerWrapper"></div>
 
   <script>
     (function() {
       const wrapper = document.getElementById('playerWrapper');
+      const menu = document.getElementById('orientationMenu');
+      const btnPortrait = document.getElementById('btnPortrait');
+      const btnLandscape = document.getElementById('btnLandscape');
 
       // ==========================================
       // 1. BLOCK RECEPTIVITY ON PC & LAPTOP DEVICES
       // ==========================================
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        // Strict RegExp checklist matching common mobile operating system tags
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
-        
-        // Also check modern iPads running desktop safari matching touch capabilities
         const isIpadTouch = (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /Macintosh/.test(userAgent));
-        
         return mobileRegex.test(userAgent) || isIpadTouch;
       }
 
       if (!isMobileDevice()) {
-        // Halt everything immediately and render explicit device block notice
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Device Not Supported</div>
             <div class="error-text">This streaming link is strictly reserved for mobile and tablet views. Please open this link using a smartphone device.</div>
           </div>
         `;
-        return; // Abort execution loop
+        return; 
       }
 
+      // Show floating options panel since device is valid mobile
+      menu.style.display = 'flex';
+
       // ==========================================
-      // 2. DISABLE DEVELOPER INTERACTION COMMANDS
+      // 2. ORIENTATION INTERACTION CONTROLS
       // ==========================================
-      // Disable Context Mouse Right-Clicks
-      document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
+      btnPortrait.addEventListener('click', function() {
+        wrapper.classList.remove('forced-landscape');
+        btnPortrait.classList.add('active-mode');
+        btnLandscape.classList.remove('active-mode');
       });
 
-      // Intercept and counter standard key sequences targeting source inspect modes
+      btnLandscape.addEventListener('click', function() {
+        wrapper.classList.add('forced-landscape');
+        btnLandscape.classList.add('active-mode');
+        btnPortrait.classList.remove('active-mode');
+        
+        // Alert helpful quick instruction reminder
+        alert("For the best experience, turn on your phone's 'Auto-Rotate' setting and tilt your device horizontally.");
+      });
+
+      // ==========================================
+      // 3. DISABLE DEVELOPER INTERACTION COMMANDS
+      // ==========================================
+      document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
       document.addEventListener('keydown', function(e) {
-        // Block F12 Key
-        if (e.keyCode === 123) {
-          e.preventDefault();
-          return false;
-        }
-        // Block Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Elements Selector)
-        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) {
-          e.preventDefault();
-          return false;
-        }
-        // Block Ctrl+U (View Source Code)
-        if (e.ctrlKey && e.keyCode === 85) {
-          e.preventDefault();
-          return false;
-        }
-        // Block Ctrl+S (Save Page Command)
-        if (e.ctrlKey && e.keyCode === 83) {
-          e.preventDefault();
-          return false;
-        }
+        if (e.keyCode === 123) { e.preventDefault(); return false; }
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); return false; }
+        if (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83)) { e.preventDefault(); return false; }
       });
 
-      // Proactive Popup Defusal
       window.open = function() { return null; };
-      window.alert = function() { return true; };
+      window.alert = function(msg) { console.log("Alert bypassed:", msg); return true; };
       window.confirm = function() { return true; };
 
       // ==========================================
-      // 3. EXECUTE MOUNT PARSE & CLEAN TRACKS
+      // 4. EXECUTE MOUNT PARSE & CLEAN TRACKS
       // ==========================================
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
@@ -147,25 +204,22 @@
       if (uniqueKey && uniqueKey.trim() !== "") {
         const targetStreamUrl = `https://sflix.film/spa/videoPlayPage/movies/${encodeURIComponent(uniqueKey.trim())}`;
 
-        // Generate the sandboxed player frame 
         const iframe = document.createElement('iframe');
         iframe.setAttribute('src', targetStreamUrl);
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('webkitallowfullscreen', 'true');
         iframe.setAttribute('mozallowfullscreen', 'true');
-        
-        // Anti-popup mobile sandboxing values configuration
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
 
         wrapper.appendChild(iframe);
 
-        // Address Bar Track Parameter Removal logic
         try {
           const cleanUrl = window.location.protocol + "//" + window.location.host + "/play";
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
         } catch (historyErr) {}
 
       } else {
+        menu.style.display = 'none'; // Hide if layout is just error screen
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Invalid Request</div>
