@@ -33,8 +33,8 @@
     }
 
     /* CROPPING & ZOOM TECHNIQUE: 
-      Stretches the iframe slightly beyond the view limits (-2% offset)
-      to push top, left, and right border layout ads completely off-screen.
+       Stretches the iframe slightly beyond the view limits (-2% offset)
+       to push top, left, and right border layout ads completely off-screen.
     */
     .player-container iframe {
       position: absolute;
@@ -184,9 +184,69 @@
       max-width: 320px;
       line-height: 1.5;
     }
+
+    /* -----------------------------------------------------------------
+       STRICT LANDSCAPE ENFORCEMENT STYLING (CRITICAL BLOCK)
+    ------------------------------------------------------------------- */
+    .landscape-blocker {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #0b0b0f;
+      display: none; /* Hidden by default */
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999999; /* Higher than anything else */
+      color: #ffffff;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .landscape-blocker-icon {
+      font-size: 3.5rem;
+      margin-bottom: 15px;
+      animation: rotateHint 2s infinite ease-in-out;
+    }
+
+    .landscape-blocker-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #3b82f6;
+      margin-bottom: 8px;
+    }
+
+    .landscape-blocker-text {
+      font-size: 0.95rem;
+      color: #9ca3af;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    @keyframes rotateHint {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(-90deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    /* Explicitly activate blocker layout natively if device aspect is Portrait */
+    @media screen and (orientation: portrait) {
+      .landscape-blocker {
+        display: flex; /* Enforces blocker to screen when phone is straight up */
+      }
+    }
   </style>
 </head>
 <body>
+
+  <div class="landscape-blocker" id="landscapeBlocker">
+    <div class="landscape-blocker-icon">🔄📱</div>
+    <div class="landscape-blocker-title">Rotate Your Phone</div>
+    <div class="landscape-blocker-text">Please turn your mobile phone horizontally into <b>Landscape Mode</b> to access and watch the stream.</div>
+  </div>
 
   <div class="orientation-popup-overlay" id="orientationPopup">
     <div class="orientation-popup-card">
@@ -240,6 +300,7 @@
       const langEnBtn = document.getElementById('langEnBtn');
       const langTaBtn = document.getElementById('langTaBtn');
       const instructionContent = document.getElementById('instructionContent');
+      const landscapeBlocker = document.getElementById('landscapeBlocker');
 
       const translations = {
         en: {
@@ -265,6 +326,7 @@
       if (!isMobileDevice()) {
         bottomShield.style.display = 'none';
         popup.style.display = 'none'; 
+        landscapeBlocker.style.display = 'none';
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Device Not Supported</div>
@@ -273,6 +335,23 @@
         `;
         return; 
       }
+
+      // Check current rotation orientation dynamically via script fallback
+      function enforceLandscapeLogic() {
+        if (!isMobileDevice()) return;
+        
+        // Match checking rules against window geometry widths
+        if (window.innerHeight > window.innerWidth) {
+          landscapeBlocker.style.display = 'flex';
+        } else {
+          landscapeBlocker.style.display = 'none';
+        }
+      }
+
+      // Sync window events for real-time manual rotational toggles
+      window.addEventListener('resize', enforceLandscapeLogic);
+      window.addEventListener('orientationchange', enforceLandscapeLogic);
+      enforceLandscapeLogic(); // Initial execution kickstart
 
       // Language Select Event Bindings
       langEnBtn.addEventListener('click', function(e) {
@@ -294,15 +373,18 @@
       // 5-Second Modal Automation Lifecycle Loop
       let timeLeft = 5; 
       setTimeout(function() {
-        popup.classList.add('show');
-        const countdownInterval = setInterval(function() {
-          timeLeft--;
-          timerNumber.textContent = timeLeft;
-          if (timeLeft <= 0) {
-            clearInterval(countdownInterval); 
-            popup.classList.remove('show');   
-          }
-        }, 1000);
+        // Only present the guidance notice if the interface isn't hidden by the blocker overlay
+        if (window.innerWidth >= window.innerHeight) {
+            popup.classList.add('show');
+            const countdownInterval = setInterval(function() {
+              timeLeft--;
+              timerNumber.textContent = timeLeft;
+              if (timeLeft <= 0) {
+                clearInterval(countdownInterval); 
+                popup.classList.remove('show');    
+              }
+            }, 1000);
+        }
       }, 300);
 
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
@@ -323,8 +405,6 @@
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
         // BALANCED REINFORCED SECURITY SANDBOX STRING:
-        // Keeps 'allow-same-origin' active so data fragments assemble and play nicely.
-        // Drops 'allow-popups' and 'allow-top-navigation' entirely to neutralize external ad redirects.
         iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
 
         wrapper.insertBefore(iframe, bottomShield);
@@ -337,6 +417,7 @@
       } else {
         bottomShield.style.display = 'none';
         popup.style.display = 'none';
+        landscapeBlocker.style.display = 'none';
         wrapper.innerHTML = `
           <div class="error-wrapper">
             <div class="error-title">Invalid Request</div>
