@@ -37,18 +37,18 @@
        to push top, left, and right border layout ads completely off-screen.
        Height is now set to 104% to remove the bottom black mask gap completely.
     */
-.player-container iframe {
-    position: absolute;
-    width: 60% !important;
-    height: 75% !important;
-    top: -2%;
-    left: 20%;
-    border: none !important;
-    outline: none !important;
-    display: block;
-    overflow: hidden !important;
-    z-index: 1;
-}
+    .player-container iframe {
+        position: absolute;
+        width: 60% !important;
+        height: 75% !important;
+        top: -2%;
+        left: 20%;
+        border: none !important;
+        outline: none !important;
+        display: block;
+        overflow: hidden !important;
+        z-index: 1;
+    }
 
     /* MULTI-LANGUAGE DYNAMIC ROTATION ALERT SYSTEM */
     .orientation-popup-overlay {
@@ -383,8 +383,13 @@
         iframe.setAttribute('mozallowfullscreen', 'true');
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
-        // Strict Sandbox setup to mitigate popups/ads while keeping playback components functioning
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+        /* 
+           STRICT ANTI-REDIRECT HARDENING:
+           By defining ONLY 'allow-scripts', we allow the stream media engine to parse logic,
+           but remove 'allow-same-origin', 'allow-forms', and 'allow-top-navigation'. 
+           This locks the user safely within the initial target URL context and freezes cross-domain popups.
+        */
+        iframe.setAttribute('sandbox', 'allow-scripts');
 
         wrapper.appendChild(iframe);
 
