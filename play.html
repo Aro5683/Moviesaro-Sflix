@@ -23,6 +23,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* Bounding Box Container acting as the viewing window */
     .player-container {
       width: 100%;
       height: 100vh;
@@ -31,6 +32,11 @@
       overflow: hidden;
     }
 
+    /* CROPPING & ZOOM TECHNIQUE: 
+       Stretches the iframe slightly beyond the view limits (-2% offset)
+       to push top, left, and right border layout ads completely off-screen.
+       Height is now set to 104% to remove the bottom black mask gap completely.
+    */
     .player-container iframe {
         position: absolute;
         width: 60% !important;
@@ -44,34 +50,7 @@
         z-index: 1;
     }
 
-    /* 
-      AD SHIELD OVERLAY 
-      This creates a transparent shield over the specific area where the APK poster 
-      and drainage dialog pop up inside the iframe. It intercepts all clicks,
-      preventing the user from clicking the ad, while keeping the play/pause area open.
-    */
-    .ad-shield {
-      position: absolute;
-      width: 60%;
-      height: 75%;
-      top: -2%;
-      left: 20%;
-      z-index: 10;
-      pointer-events: none; /* Let clicks pass through by default */
-    }
-
-    /* Target the bottom-middle space where the Drainage Dialog / APK download card renders */
-    .ad-shield::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 45%; /* Covers the bottom half area where the dialogue/poster displays */
-      background: transparent;
-      pointer-events: auto; /* STOPS ALL CLICKS/TOUCHES HERE */
-    }
-
+    /* MULTI-LANGUAGE DYNAMIC ROTATION ALERT SYSTEM */
     .orientation-popup-overlay {
       position: fixed;
       top: 0;
@@ -195,6 +174,7 @@
       line-height: 1.5;
     }
 
+    /* STRICT LANDSCAPE ENFORCEMENT STYLING */
     .landscape-blocker {
       position: fixed;
       top: 0;
@@ -239,6 +219,7 @@
       100% { transform: rotate(0deg); }
     }
 
+    /* Activate blocker native layer if device orientation is Portrait */
     @media screen and (orientation: portrait) {
       .landscape-blocker {
         display: flex; 
@@ -272,23 +253,22 @@
     </div>
   </div>
 
-  <div class="player-container" id="playerWrapper">
-    <!-- Transparent safety barrier added inside the layout -->
-    <div class="ad-shield"></div>
-  </div>
+  <div class="player-container" id="playerWrapper"></div>
 
   <script>
     (function() {
+      // 1. POPUP WINDOW DESTRUCTION ENGINE
       window.open = function() { return null; };
       
       window.onbeforeunload = function() {
         return "Preventing ad redirect loops.";
       };
 
+      // 2. WINDOW HIDDEN PROCESS FOCUS RECOVERY TRACK
       window.addEventListener('blur', function() {
         setTimeout(function() {
           if (document.activeElement === document.querySelector('iframe')) {
-            // User interaction remains fluid
+            // User interaction remains fluid inside the canvas tracking zone
           } else {
             window.focus();
           }
@@ -318,6 +298,7 @@
         }
       };
 
+      // Restrict access exclusively to mobile and tablet display states
       function isMobileDevice() {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
@@ -337,6 +318,7 @@
         return; 
       }
 
+      // Check current rotation orientation dynamically
       function enforceLandscapeLogic() {
         if (!isMobileDevice()) return;
         
@@ -351,6 +333,7 @@
       window.addEventListener('orientationchange', enforceLandscapeLogic);
       enforceLandscapeLogic(); 
 
+      // Language Select Event Bindings
       langEnBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         langEnBtn.classList.add('active-lang');
@@ -367,6 +350,7 @@
         timerText.textContent = translations.ta.timer;
       });
 
+      // 5-Second Modal Automation Lifecycle Loop
       let timeLeft = 5; 
       setTimeout(function() {
         if (window.innerWidth >= window.innerHeight) {
@@ -384,6 +368,7 @@
 
       document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 
+      // Parse dynamic stream request parameters
       const urlParams = new URLSearchParams(window.location.search);
       const uniqueKey = urlParams.get('id');
 
@@ -399,11 +384,12 @@
         iframe.setAttribute('allow', 'fullscreen; autoplay; screen-wake-lock;');
         
         /* 
-           FIXED SANDBOX FLAGS:
-           Added 'allow-same-origin' back to prevent the SessionStorage/Vue app crash.
-           Kept 'allow-forms' and 'allow-top-navigation' turned off to stop ad popups.
+           STRICT ANTI-REDIRECT HARDENING:
+           By defining ONLY 'allow-scripts', we allow the stream media engine to parse logic,
+           but remove 'allow-same-origin', 'allow-forms', and 'allow-top-navigation'. 
+           This locks the user safely within the initial target URL context and freezes cross-domain popups.
         */
-        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+        iframe.setAttribute('sandbox', 'allow-scripts');
 
         wrapper.appendChild(iframe);
 
